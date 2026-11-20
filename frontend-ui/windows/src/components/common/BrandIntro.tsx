@@ -3,11 +3,9 @@ import type { ReactNode } from 'react'
 import { useThemePreference } from '../../services/theme'
 import './brand-intro.css'
 
-const introKey = 'aig-ui-brand-intro-v3'
+const introKey = 'aig-ui-brand-intro-v4'
 const firstFrameDeadline = 1000
-const introDeadline = 4300
-// Both source videos embed a filmed login later in the clip.
-const logoDuration = 3
+const introDeadline = 12000
 const reducedMotionQuery = '(prefers-reduced-motion: reduce)'
 const branding = import.meta.env.BASE_URL + 'branding/'
 
@@ -81,7 +79,6 @@ export default function BrandIntro({ children }: { children: ReactNode }) {
           playsInline
           preload="auto"
           aria-hidden="true"
-          onTimeUpdate={event => { if (event.currentTarget.currentTime >= logoDuration) finish() }}
           onEnded={finish}
           onError={finish}
         />

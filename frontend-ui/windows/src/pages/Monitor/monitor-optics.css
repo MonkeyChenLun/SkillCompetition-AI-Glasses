@@ -5,7 +5,7 @@
   scrollbar-gutter: auto;
 }
 
-.workspace-frame[data-workspace-window="/"]:is([data-mode="maximized"], [data-mode="left"], [data-mode="right"]) > .workspace-pane {
+.workspace-frame[data-workspace-window="/"][data-mode="maximized"] > .workspace-pane {
   padding-block-end: 74px;
 }
 
@@ -138,6 +138,12 @@
   .monitor-page .monitor-header { flex-wrap: nowrap; }
   .monitor-main .monitor-toolbar .device-choice { padding-inline: 4px; gap: 4px; }
   .monitor-main .camera-controls > div:first-child { display: none; }
+}
+
+@container workspace-pane (max-height: 275px) {
+  .workspace-frame:is([data-mode^="top-"], [data-mode^="bottom-"]) .monitor-main .camera-controls > div:first-child {
+    display: none;
+  }
 }
 
 @container monitor-stage (max-height: 210px) {

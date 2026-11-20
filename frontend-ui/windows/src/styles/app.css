@@ -36,7 +36,7 @@ button, a, select, input, textarea { -webkit-tap-highlight-color: transparent; }
 .sidebar { position: fixed; z-index: 4; inset: 0 auto 0 0; width: var(--sidebar-width); padding: 22px 13px 13px; background: var(--floating-background); backdrop-filter: var(--floating-backdrop); border-inline-end: 1px solid var(--floating-divider); box-shadow: inset -1px 0 var(--floating-edge), var(--sidebar-shadow); display: flex; flex-direction: column; }
 .brand { display: flex; gap: 11px; align-items: center; padding: 0 8px 22px; margin-bottom: 14px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .brand-mark { display: block; width: 40px; height: 40px; flex: 0 0 40px; object-fit: contain; background: #fff; border: 1px solid #d9e3f2; border-radius: 12px; box-shadow: 0 4px 9px -3px #16164460; }
-:root[data-theme="dark"] .brand-mark { background: #0c0d2c; border-color: #39396c; }
+:root[data-theme="dark"] .brand-mark { background: #12113b; border-color: #39396c; }
 .brand strong { display: block; color: var(--ink); font-size: 16px; letter-spacing: -.035em; line-height: 1.25; }
 .brand small, .sidebar-bottom small { display: block; color: var(--muted); font-size: 11px; margin-top: 3px; }
 .sidebar-nav { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; }

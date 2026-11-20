@@ -4,8 +4,8 @@ import { LayoutGrid, ShieldAlert, X } from 'lucide-react'
 import { useAuth } from '../../services/auth'
 import Shell from '../layout/Shell'
 import { WorkspaceDock, WorkspaceFrame } from './WorkspaceFrame'
-import { canSplitWorkspace, clampWindowRect, getWindowRect, initialWindowRect } from './geometry'
-import type { SnapSide, WindowMode, WindowRect, WorkBounds } from './geometry'
+import { canSnapToQuadrant, canSplitWorkspace, clampWindowRect, getQuadrantRect, getWindowRect, initialWindowRect } from './geometry'
+import type { SnapQuadrant, WindowMode, WindowRect, WorkBounds } from './geometry'
 import { playDockGenie } from './dockGenie'
 import { WindowContext, WorkspaceContext, WorkspaceLink } from './workspaceContext'
 import { EMPTY_WORKSPACE, hrefForWindow, parseWindowRoute, WindowPageContent } from './workspaceRoutes'
@@ -40,26 +40,27 @@ function amend(state: WorkspaceState, id: string, update: (item: OpenWindow) => 
   return { ...state, windows: state.windows.map(item => item.route.id === id ? update(item) : item) }
 }
 
-function WindowView({ item, active, visible, compact, bounds, onFocus, onSearch, onGeometry, onSnap, onPreview, onMaximize, onMinimize, onClose }: {
+function WindowView({ item, active, visible, compact, canSnap, bounds, onFocus, onSearch, onGeometry, onSnap, onPreview, onMaximize, onMinimize, onClose }: {
   item: OpenWindow
   active: boolean
   visible: boolean
   compact: boolean
+  canSnap: boolean
   bounds: WorkBounds
   onFocus: () => void
   onSearch: (params: URLSearchParams) => void
   onGeometry: (rect: WindowRect) => void
-  onSnap: (side: SnapSide) => void
-  onPreview: (side: SnapSide | null) => void
+  onSnap: (quadrant: SnapQuadrant) => void
+  onPreview: (quadrant: SnapQuadrant | null) => void
   onMaximize: () => void
   onMinimize: () => void
   onClose: () => void
 }) {
   const scrollRef = useRef<HTMLDivElement>(null)
-  const mode = compact ? 'maximized' : item.mode
+  const mode = compact ? 'maximized' : !canSnap && item.mode !== 'maximized' ? 'floating' : item.mode
   return <WorkspaceFrame id={item.route.id} title={item.route.title} active={active} visible={visible}
     flight={item.flight} mode={mode} stackOrder={item.order} rect={getWindowRect(mode, item.floating, bounds)}
-    floatingRect={item.floating} bounds={bounds} canSnap={!compact} scrollRef={scrollRef}
+    floatingRect={item.floating} bounds={bounds} canFloat={!compact} canSnap={canSnap} scrollRef={scrollRef}
     onFocus={onFocus} onGeometry={onGeometry} onSnap={onSnap} onPreview={onPreview}
     onMaximize={onMaximize} onMinimize={onMinimize} onClose={onClose}>
     <WindowContext.Provider value={{ search: item.route.search, setSearch: onSearch, scrollRef, visible: visible && !item.flight }}>
@@ -83,13 +84,14 @@ export default function Workspace() {
   const [state, setState] = useState<WorkspaceState>({ windows: [], activeId: null })
   const latest = useRef(state)
   const nextOrder = useRef(0)
-  const [preview, setPreview] = useState<SnapSide | null>(null)
+  const [preview, setPreview] = useState<SnapQuadrant | null>(null)
   const [notice, setNotice] = useState('')
   const running = useRef(new Map<string, { flight: Flight; cancel: () => void }>())
   const pendingHref = useRef<string | null>(null)
   const lastLocation = useRef<string | null>(null)
   const pendingFocus = useRef<string | null>(null)
   const compact = !canSplitWorkspace(bounds)
+  const canSnap = canSnapToQuadrant(bounds)
 
   const allowed = (route: WindowRoute) => !route.permission || can(route.permission)
   const windows = state.windows.filter(item => allowed(item.route))
@@ -311,19 +313,19 @@ export default function Workspace() {
     if (before.activeId === id) writeAddress(hrefForWindow(route), true)
   }
 
-  function snap(id: string, side: SnapSide) {
-    if (compact) return
+  function snap(id: string, quadrant: SnapQuadrant) {
+    if (!canSnap) return
     const base = latest.current
     commit({
       ...base,
       windows: base.windows.map(item => item.route.id === id
-        ? { ...item, mode: side, restoreMode: side }
-        : item.mode === side ? { ...item, mode: 'floating', restoreMode: 'floating' } : item),
+        ? { ...item, mode: quadrant, restoreMode: quadrant }
+        : item.mode === quadrant ? { ...item, mode: 'floating', restoreMode: 'floating' } : item),
     })
     setPreview(null)
   }
 
-  const snapBounds = preview && !compact ? getWindowRect(preview, initialWindowRect(bounds, 0), bounds) : null
+  const snapBounds = preview && canSnap ? getQuadrantRect(preview, bounds) : null
   return <WorkspaceContext.Provider value={{ openWindow }}>
     <Shell activeTo={active?.route.navPath} title={active?.route.title} dock={
       <WorkspaceDock items={windows.map(item => ({
@@ -335,17 +337,17 @@ export default function Workspace() {
         {!anyVisible && <div className="workspace-stage-message">
           <LayoutGrid size={25} aria-hidden="true" />
           <strong>{windows.length ? '窗口已收起' : '工作台'}</strong>
-          <p>{windows.length ? '点击底部 Dock 恢复窗口，或从侧栏打开其他模块。' : '从左侧导航打开模块。你可以把窗口拖到左右边缘并排查看。'}</p>
+          <p>{windows.length ? '点击底部 Dock 恢复窗口，或从侧栏打开其他模块。' : <>从左侧导航打开模块。{canSnap && '把窗口拖到工作区四角可分屏查看。'}</>}</p>
           {!windows.length && <WorkspaceLink to="/" className="button">打开实时监控</WorkspaceLink>}
         </div>}
         {snapBounds && <div className="workspace-snap-preview" style={{ left: snapBounds.x, top: snapBounds.y, width: snapBounds.width, height: snapBounds.height }} aria-hidden="true" />}
         {windows.map(item => <WindowView key={item.route.id} item={item} active={active === item} visible={!item.minimized && (!compact || compactVisibleId === item.route.id)}
-          compact={compact} bounds={bounds} onFocus={() => focusWindow(item.route.id)} onSearch={(params) => changeSearch(item.route.id, params)}
+          compact={compact} canSnap={canSnap} bounds={bounds} onFocus={() => focusWindow(item.route.id)} onSearch={(params) => changeSearch(item.route.id, params)}
           onGeometry={(rect) => commit(amend(latest.current, item.route.id, value => ({ ...value, mode: 'floating', restoreMode: 'floating', floating: clampWindowRect(rect, bounds) })))}
-          onSnap={(side) => snap(item.route.id, side)} onPreview={setPreview}
+          onSnap={(quadrant) => snap(item.route.id, quadrant)} onPreview={setPreview}
           onMaximize={() => {
             if (compact) return
-            if (item.mode === 'maximized' && item.restoreMode !== 'floating') {
+            if (canSnap && item.mode === 'maximized' && item.restoreMode !== 'floating') {
               snap(item.route.id, item.restoreMode)
               return
             }

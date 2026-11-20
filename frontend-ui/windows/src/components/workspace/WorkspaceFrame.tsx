@@ -1,9 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { PointerEvent, ReactNode, RefObject } from 'react'
-import { Columns2, Maximize2, Minimize2, Minus, PanelLeft, PanelRight, SlidersHorizontal, X } from 'lucide-react'
+import { Columns2, Maximize2, Minimize2, Minus, SlidersHorizontal, X } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { clampWindowRect, getResizeRect, getWindowScaleLimits, resizeEdges, scaleWindowRect } from './geometry'
-import type { ResizeEdge, SnapSide, WindowMode, WindowRect, WorkBounds } from './geometry'
+import type { ResizeEdge, SnapQuadrant, WindowMode, WindowRect, WorkBounds } from './geometry'
 import './workspace.css'
 import './workspace-resize.css'
 import { useGlassSelection } from '../../hooks/useGlassSelection'
@@ -20,13 +20,14 @@ type FrameProps = {
   rect: WindowRect
   floatingRect: WindowRect
   bounds: WorkBounds
+  canFloat: boolean
   canSnap: boolean
   stackOrder?: number
   scrollRef: RefObject<HTMLDivElement | null>
   onFocus: () => void
   onGeometry: (next: WindowRect) => void
-  onSnap: (side: SnapSide) => void
-  onPreview: (side: SnapSide | null) => void
+  onSnap: (quadrant: SnapQuadrant) => void
+  onPreview: (quadrant: SnapQuadrant | null) => void
   onMaximize: () => void
   onMinimize: () => void
   onClose: () => void
@@ -41,10 +42,11 @@ type Gesture = GestureIntent & {
   clientX: number
   clientY: number
   stageX: number
+  stageY: number
   start: WindowRect
   moved: boolean
   draft: WindowRect | null
-  preview: SnapSide | null
+  preview: SnapQuadrant | null
   frame: number | null
 }
 
@@ -60,18 +62,13 @@ type ScaleGesture = {
 
 const dragThreshold = 5
 const snapDistance = 28
+const snapOptions = [
+  { quadrant: 'top-left', label: '停靠左上' },
+  { quadrant: 'top-right', label: '停靠右上' },
+  { quadrant: 'bottom-left', label: '停靠左下' },
+  { quadrant: 'bottom-right', label: '停靠右下' },
+] as const
 const scaleKeys = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'])
-
-function WindowControl({ icon: Icon, label, onClick, close = false }: {
-  icon: LucideIcon
-  label: string
-  onClick: () => void
-  close?: boolean
-}) {
-  return <button className={`workspace-window-control${close ? ' workspace-window-control--close' : ''}`} type="button" title={label} aria-label={label} onClick={onClick}>
-    <Icon size={15} strokeWidth={1.8} aria-hidden="true" />
-  </button>
-}
 
 /** Window buttons: quiet icons that pick up colour on hover (close turns red). */
 function WindowButton({ kind, icon: Icon, label, onClick }: { kind: 'close' | 'minimize' | 'zoom'; icon: LucideIcon; label: string; onClick: () => void }) {
@@ -81,7 +78,7 @@ function WindowButton({ kind, icon: Icon, label, onClick }: { kind: 'close' | 'm
 }
 
 export function WorkspaceFrame({
-  id, title, active, visible, flight, mode, rect, floatingRect, bounds, canSnap, stackOrder,
+  id, title, active, visible, flight, mode, rect, floatingRect, bounds, canFloat, canSnap, stackOrder,
   scrollRef, onFocus, onGeometry, onSnap, onPreview, onMaximize, onMinimize, onClose, children,
 }: FrameProps) {
   const frameRef = useRef<HTMLElement | null>(null)
@@ -195,17 +192,17 @@ export function WorkspaceFrame({
     }
   }, [])
   useEffect(() => {
-    if (!interactive || !canSnap) {
+    if (!interactive || !canFloat) {
       clearGesture()
       closeScale()
     }
-  }, [interactive, canSnap])
+  }, [interactive, canFloat])
   useEffect(closeScale, [bounds.width, bounds.height])
   useEffect(() => { if (mode !== 'floating') closeScale() }, [mode])
   useEffect(() => { if (scaleOpen) scaleInput.current?.focus({ preventScroll: true }) }, [scaleOpen])
 
   function startGesture(event: PointerEvent<HTMLElement>, intent: GestureIntent) {
-    if (!interactive || !canSnap || event.button !== 0 || !event.isPrimary || gesture.current) return
+    if (!interactive || !canFloat || event.button !== 0 || !event.isPrimary || gesture.current) return
     if (intent.kind === 'move' && event.target instanceof Element && event.target.closest('button, a, input, select, textarea, .workspace-window-scale')) return
     const frame = frameRef.current
     if (!frame) return
@@ -221,6 +218,7 @@ export function WorkspaceFrame({
       clientX: event.clientX,
       clientY: event.clientY,
       stageX: screenRect.left - rect.x,
+      stageY: screenRect.top - rect.y,
       start: intent.kind === 'resize' || mode === 'floating' ? rect : clampWindowRect(floatingRect, bounds),
       moved: false,
       draft: null,
@@ -248,10 +246,13 @@ export function WorkspaceFrame({
         y: currentGesture.initial.y + deltaY,
       }, bounds)
       const pointerX = event.clientX - currentGesture.stageX
-      const side = pointerX <= snapDistance ? 'left' : pointerX >= bounds.width - snapDistance ? 'right' : null
-      if (side !== currentGesture.preview) {
-        currentGesture.preview = side
-        onPreview(side)
+      const pointerY = event.clientY - currentGesture.stageY
+      const column = pointerX <= snapDistance ? 'left' : pointerX >= bounds.width - snapDistance ? 'right' : null
+      const row = pointerY < bounds.height / 2 ? 'top' : 'bottom'
+      const quadrant = canSnap && column ? (`${row}-${column}` as const) : null
+      if (quadrant !== currentGesture.preview) {
+        currentGesture.preview = quadrant
+        onPreview(quadrant)
       }
     }
     if (paint && currentGesture.frame === null) {
@@ -272,9 +273,9 @@ export function WorkspaceFrame({
     if (currentGesture?.pointerId !== event.pointerId) return
     updateGesture(event, currentGesture, false)
     const next = currentGesture.draft
-    const side = currentGesture.preview
+    const quadrant = currentGesture.preview
     clearGesture()
-    if (side) onSnap(side)
+    if (quadrant) onSnap(quadrant)
     else if (next) onGeometry(next)
   }
 
@@ -291,7 +292,7 @@ export function WorkspaceFrame({
       className="workspace-frame" data-workspace-window={id} data-active={active ? '' : undefined}
       data-mode={draft || scaleDraft ? 'floating' : mode} data-gesturing={draft ? '' : undefined}
       data-scaling={scaleActive ? '' : undefined}
-      data-resizable={canSnap ? '' : undefined}
+      data-resizable={canFloat ? '' : undefined}
       data-unfolding={visible && flight === 'out' ? '' : undefined}
       aria-hidden={!interactive || undefined} inert={!interactive}
       style={{ left: current.x, top: current.y, width: current.width, height: current.height, zIndex: stackOrder ?? (active ? 2 : 1) }}
@@ -304,10 +305,10 @@ export function WorkspaceFrame({
           clearGesture()
         }
       }}>
-      <div className="workspace-titlebar" data-movable={canSnap ? '' : undefined}
+      <div className="workspace-titlebar" data-movable={canFloat ? '' : undefined}
         onPointerDown={(event) => startGesture(event, { kind: 'move' })}
         onDoubleClick={(event) => {
-          if (canSnap && event.target instanceof Element && !event.target.closest('button, .workspace-window-scale')) {
+          if (canFloat && event.target instanceof Element && !event.target.closest('button, .workspace-window-scale')) {
             closeScale()
             onMaximize()
           }
@@ -316,12 +317,16 @@ export function WorkspaceFrame({
         <div className="workspace-window-title" id={titleId} title={title}>{title}</div>
         <div role="group" aria-label="窗口控制" className="workspace-window-controls">
           {canSnap && (
-            <div className="workspace-snap-controls">
-              <WindowControl icon={PanelLeft} label="靠左" onClick={() => { closeScale(); onSnap('left') }} />
-              <WindowControl icon={PanelRight} label="靠右" onClick={() => { closeScale(); onSnap('right') }} />
+            <div className="workspace-snap-controls" role="group" aria-label="四宫格停靠">
+              {snapOptions.map(({ quadrant, label }) => (
+                <button key={quadrant} className="workspace-window-control" type="button" title={label} aria-label={label}
+                  aria-pressed={mode === quadrant} onClick={() => { closeScale(); onSnap(quadrant) }}>
+                  <span className="workspace-quadrant-icon" data-quadrant={quadrant} aria-hidden="true" />
+                </button>
+              ))}
             </div>
           )}
-          {canSnap && <>
+          {canFloat && <>
             {mode === 'floating' && <div className="workspace-window-scale" onKeyDown={(event) => {
               if (event.key === 'Escape' && scaleOpen) {
                 event.preventDefault()
@@ -352,13 +357,13 @@ export function WorkspaceFrame({
           </>}
           <span className="window-buttons">
             <WindowButton kind="minimize" icon={Minus} label="最小化" onClick={onMinimize} />
-            {canSnap && <WindowButton kind="zoom" icon={isMaximized ? Minimize2 : Maximize2} label={isMaximized ? '还原大小' : '最大化'} onClick={() => { closeScale(); onMaximize() }} />}
+            {canFloat && <WindowButton kind="zoom" icon={isMaximized ? Minimize2 : Maximize2} label={isMaximized ? '还原大小' : '最大化'} onClick={() => { closeScale(); onMaximize() }} />}
             <WindowButton kind="close" icon={X} label="关闭窗口" onClick={onClose} />
           </span>
         </div>
       </div>
       <div className="workspace-pane" ref={scrollRef}>{children}</div>
-      {canSnap && resizeEdges.map((edge) => <div key={edge} className={`workspace-resize-hit${edge === 'se' ? ' workspace-resize-grip' : ''}`} data-resize-edge={edge}
+      {canFloat && resizeEdges.map((edge) => <div key={edge} className={`workspace-resize-hit${edge === 'se' ? ' workspace-resize-grip' : ''}`} data-resize-edge={edge}
         aria-hidden="true" title="拖动调整窗口大小" onPointerDown={(event) => startGesture(event, { kind: 'resize', edge })} {...gestureHandlers} />)}
     </section>
   )

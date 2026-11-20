@@ -1,7 +1,7 @@
 export type WindowRect = { x: number; y: number; width: number; height: number }
 export type WorkBounds = { width: number; height: number }
-export type SnapSide = 'left' | 'right'
-export type WindowMode = 'floating' | 'maximized' | SnapSide
+export type SnapQuadrant = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+export type WindowMode = 'floating' | 'maximized' | SnapQuadrant
 export const resizeEdges = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'] as const
 export type ResizeEdge = typeof resizeEdges[number]
 
@@ -9,6 +9,8 @@ const inset = 12
 const gap = 12
 const minWidth = 440
 const minHeight = 300
+// The floating workspace Dock sits above the ordinary bottom inset.
+const dockClearance = 64
 
 function edges(bounds: WorkBounds) {
   const x = bounds.width >= 320 ? inset : 0
@@ -23,6 +25,16 @@ function clamp(value: number, min: number, max: number) {
 export function canSplitWorkspace(bounds: WorkBounds) {
   const available = edges(bounds)
   return available.width >= 2 * minWidth + gap && available.height >= minHeight
+}
+
+function quadrantArea(bounds: WorkBounds) {
+  const available = edges(bounds)
+  return { ...available, height: Math.max(0, available.height - dockClearance) }
+}
+
+export function canSnapToQuadrant(bounds: WorkBounds) {
+  const available = quadrantArea(bounds)
+  return available.width >= 2 * minWidth + gap && available.height >= 2 * minHeight + gap
 }
 
 export function clampWindowRect(rect: WindowRect, bounds: WorkBounds): WindowRect {
@@ -49,14 +61,22 @@ export function initialWindowRect(bounds: WorkBounds, index: number): WindowRect
   }, bounds)
 }
 
+export function getQuadrantRect(quadrant: SnapQuadrant, bounds: WorkBounds): WindowRect {
+  const available = quadrantArea(bounds)
+  const width = Math.max(0, (available.width - gap) / 2)
+  const height = Math.max(0, (available.height - gap) / 2)
+  return {
+    x: available.x + (quadrant.endsWith('right') ? width + gap : 0),
+    y: available.y + (quadrant.startsWith('bottom') ? height + gap : 0),
+    width,
+    height,
+  }
+}
+
 export function getWindowRect(mode: WindowMode, floating: WindowRect, bounds: WorkBounds): WindowRect {
   if (!canSplitWorkspace(bounds) || mode === 'maximized') return edges(bounds)
-  if (mode === 'floating') return clampWindowRect(floating, bounds)
-  const available = edges(bounds)
-  const leftWidth = Math.floor((available.width - gap) / 2)
-  return mode === 'left'
-    ? { ...available, width: leftWidth }
-    : { ...available, x: available.x + leftWidth + gap, width: available.width - leftWidth - gap }
+  if (mode === 'floating' || !canSnapToQuadrant(bounds)) return clampWindowRect(floating, bounds)
+  return getQuadrantRect(mode, bounds)
 }
 
 export function getResizeRect(start: WindowRect, deltaX: number, deltaY: number, bounds: WorkBounds, edge: ResizeEdge): WindowRect {
