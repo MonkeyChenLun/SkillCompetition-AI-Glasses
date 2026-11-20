@@ -1,0 +1,47 @@
+.brand-intro {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: clamp(12px, 4vw, 48px);
+  background: #060b20;
+  color: #f5f8ff;
+}
+
+.brand-intro-media {
+  position: relative;
+  width: min(100%, 880px);
+  max-width: calc(100vh * 1.75);
+  aspect-ratio: 2;
+  mask-image: radial-gradient(ellipse closest-side, #000 80%, transparent 100%);
+}
+
+.brand-intro-media :is(img, video) {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.brand-intro-video { opacity: 0; pointer-events: none; }
+.brand-intro-video--playing { opacity: 1; }
+
+.brand-intro-skip {
+  position: absolute;
+  inset-block-end: clamp(16px, 4vw, 36px);
+  inset-inline-end: clamp(16px, 4vw, 36px);
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid #5d6d90;
+  border-radius: 999px;
+  background: #141f3a;
+  color: inherit;
+  font: inherit;
+  font-size: .875rem;
+  cursor: pointer;
+}
+
+.brand-intro-skip:hover { background: #213056; }
+.brand-intro-skip:focus-visible { outline: 2px solid #9abcff; outline-offset: 3px; }

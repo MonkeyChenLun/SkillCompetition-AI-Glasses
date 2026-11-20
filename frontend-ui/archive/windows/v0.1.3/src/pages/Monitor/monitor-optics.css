@@ -1,0 +1,27 @@
+.monitor-focus-card { position: relative; }
+
+@container workspace-pane (max-width: 760px) {
+  .monitor-page .monitor-grid { grid-template-columns: minmax(0, 1fr); }
+  .monitor-page .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .monitor-page .page-header { align-items: flex-start; flex-wrap: wrap; }
+  .monitor-page .panel-header,
+  .monitor-page .camera-controls,
+  .monitor-page .camera-controls > div { flex-wrap: wrap; }
+}
+.monitor-result-edge {
+  position: absolute;
+  inset: -1px -1px -1px -3px;
+  border: 1px solid var(--focus-ring);
+  border-radius: inherit;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--focus-ring) 32%, transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) and (forced-colors: none) {
+  .monitor-result-edge.is-arriving { animation: monitor-result-arrival var(--dur-update) var(--ease-out-ios) both; }
+}
+@keyframes monitor-result-arrival {
+  0%, 100% { opacity: 0; }
+  18% { opacity: 1; }
+}

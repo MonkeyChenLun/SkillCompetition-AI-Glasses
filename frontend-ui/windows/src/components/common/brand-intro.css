@@ -1,0 +1,54 @@
+.brand-intro {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: clamp(12px, 4vw, 48px);
+  background:
+    radial-gradient(ellipse at 34% 29%, #154c7e, transparent 53%),
+    radial-gradient(ellipse at 66% 74%, #29265e, transparent 57%),
+    #081327;
+}
+
+.brand-intro[data-intro-theme="light"] {
+  background:
+    radial-gradient(ellipse at 32% 22%, #aad9ee, transparent 54%),
+    radial-gradient(ellipse at 73% 31%, #b0b9ef, transparent 57%),
+    #ece9f1;
+}
+
+.brand-intro-media {
+  position: relative;
+  width: min(100%, 640px, calc(100vh * .84));
+  aspect-ratio: 15 / 16;
+}
+
+.brand-intro-video {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse closest-side, #000 75%, transparent 100%);
+}
+
+.brand-intro-video--playing { opacity: 1; }
+
+.brand-intro-still {
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  width: 100%;
+  height: auto;
+  transform: translateY(-50%);
+  mask-image: radial-gradient(ellipse closest-side, #000 84%, transparent 100%);
+  opacity: 0;
+  animation: brand-intro-still-in 1ms 220ms forwards;
+}
+
+@keyframes brand-intro-still-in {
+  to { opacity: 1; }
+}

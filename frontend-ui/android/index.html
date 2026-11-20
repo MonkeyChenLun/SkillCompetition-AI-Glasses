@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f4f7f5" />
+    <script>
+      // Match the stored appearance before the app and its styles load.
+      (() => {
+        const root = document.documentElement
+        function loadPreference(key) {
+          try {
+            return JSON.parse(localStorage.getItem('ai-glasses-user:v1:' + key))
+          } catch {
+            return null
+          }
+        }
+        const theme = loadPreference('theme')
+        const isDark = theme === 'dark' || (theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
+        root.dataset.theme = isDark ? 'dark' : 'light'
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', isDark ? '#182925' : '#f4f7f5')
+        const glass = loadPreference('glass')
+        const reducesTransparency = matchMedia('(prefers-reduced-transparency: reduce)').matches
+        root.dataset.glass = glass === 'on' || (glass !== 'off' && !reducesTransparency) ? 'on' : 'off'
+      })()
+    </script>
+    <link rel="icon" href="./glasses.svg" type="image/svg+xml" />
+    <title>AI Glasses 用户端</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
