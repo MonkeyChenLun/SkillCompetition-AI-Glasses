@@ -8,6 +8,9 @@ import './workspace.css'
 import './workspace-resize.css'
 import { useGlassSelection } from '../../hooks/useGlassSelection'
 import { useLiquidGlass } from '../../hooks/useLiquidGlass'
+import { stirBackground } from '../effects/LivingBackground'
+import { createLiquidDrag } from './liquidDrag'
+import type { LiquidDrag } from './liquidDrag'
 import './workspace-dock-selection.css'
 
 type FrameProps = {
@@ -48,6 +51,13 @@ type Gesture = GestureIntent & {
   draft: WindowRect | null
   preview: SnapQuadrant | null
   frame: number | null
+  /** Pointer velocity tracking for the liquid drag (px/ms). */
+  lastX: number
+  lastY: number
+  lastT: number
+  vx: number
+  vy: number
+  liquid: boolean
 }
 
 type ScaleGesture = {
@@ -83,6 +93,7 @@ export function WorkspaceFrame({
 }: FrameProps) {
   const frameRef = useRef<HTMLElement | null>(null)
   const gesture = useRef<Gesture | null>(null)
+  const liquid = useRef<LiquidDrag | null>(null)
   const titleId = useId()
   const scaleId = useId()
   const scaleToggle = useRef<HTMLButtonElement>(null)
@@ -105,6 +116,7 @@ export function WorkspaceFrame({
     if (currentGesture.frame !== null) cancelAnimationFrame(currentGesture.frame)
     if (currentGesture.capture.hasPointerCapture(currentGesture.pointerId)) currentGesture.capture.releasePointerCapture(currentGesture.pointerId)
     if (currentGesture.preview) onPreview(null)
+    liquid.current?.release()
     setDraft(null)
   }
 
@@ -189,6 +201,7 @@ export function WorkspaceFrame({
       if (currentGesture?.frame != null) cancelAnimationFrame(currentGesture.frame)
       if (currentGesture?.preview) previewHandler.current(null)
       disposeScaleGesture()
+      liquid.current?.dispose()
     }
   }, [])
   useEffect(() => {
@@ -224,6 +237,12 @@ export function WorkspaceFrame({
       draft: null,
       preview: null,
       frame: null,
+      lastX: event.clientX,
+      lastY: event.clientY,
+      lastT: event.timeStamp,
+      vx: 0,
+      vy: 0,
+      liquid: false,
     }
     frame.focus({ preventScroll: true })
   }
@@ -247,6 +266,39 @@ export function WorkspaceFrame({
       }, bounds)
       const pointerX = event.clientX - currentGesture.stageX
       const pointerY = event.clientY - currentGesture.stageY
+      // Liquid drag: smoothed pointer velocity bends the window and stirs the wallpaper.
+      const elapsed = event.timeStamp - currentGesture.lastT
+      if (elapsed > 0) {
+        const blend = Math.min(1, elapsed / 40)
+        currentGesture.vx += ((event.clientX - currentGesture.lastX) / elapsed - currentGesture.vx) * blend
+        currentGesture.vy += ((event.clientY - currentGesture.lastY) / elapsed - currentGesture.vy) * blend
+        currentGesture.lastX = event.clientX
+        currentGesture.lastY = event.clientY
+        currentGesture.lastT = event.timeStamp
+      }
+      const element = frameRef.current
+      if (element && paint) {
+        if (!liquid.current) liquid.current = createLiquidDrag(element)
+        if (!currentGesture.liquid) {
+          currentGesture.liquid = true
+          const draftRect = currentGesture.draft
+          liquid.current.begin(pointerX - draftRect.x, pointerY - draftRect.y)
+        }
+        liquid.current.feed(currentGesture.vx, currentGesture.vy)
+        const draftRect = currentGesture.draft
+        stirBackground({
+          x: event.clientX,
+          y: event.clientY,
+          vx: currentGesture.vx,
+          vy: currentGesture.vy,
+          rect: {
+            x: currentGesture.stageX + draftRect.x,
+            y: currentGesture.stageY + draftRect.y,
+            width: draftRect.width,
+            height: draftRect.height,
+          },
+        })
+      }
       const column = pointerX <= snapDistance ? 'left' : pointerX >= bounds.width - snapDistance ? 'right' : null
       const row = pointerY < bounds.height / 2 ? 'top' : 'bottom'
       const quadrant = canSnap && column ? (`${row}-${column}` as const) : null
@@ -403,11 +455,15 @@ function DockSelection({ items, onSelect }: DockProps) {
   </div>
 }
 
-export function WorkspaceDock({ items, onSelect }: DockProps) {
+/**
+ * `hidden`: nothing to switch between (no window, or a single open one) — the sidebar is enough.
+ * `collapsed`: the user is scrolling down; the dock sinks out of the way and returns on scroll up or hover.
+ */
+export function WorkspaceDock({ items, onSelect, hidden = false, collapsed = false }: DockProps & { hidden?: boolean; collapsed?: boolean }) {
   const dockRef = useRef<HTMLElement>(null)
   useLiquidGlass(dockRef, { radius: 999, bezel: 20, depth: 14 })
   return (
-    <div className="workspace-dock-strip">
+    <div className="workspace-dock-strip" data-hidden={hidden ? '' : undefined} data-collapsed={collapsed && !hidden ? '' : undefined} inert={hidden}>
       <nav className="workspace-dock" aria-label="窗口 Dock" ref={dockRef}>
         <div className="workspace-dock-mark" aria-hidden="true"><Columns2 size={15} strokeWidth={1.7} /></div>
         {items.length ? <DockSelection items={items} onSelect={onSelect} /> : <span className="workspace-dock-empty">未打开窗口</span>}

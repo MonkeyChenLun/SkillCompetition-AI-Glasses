@@ -1,0 +1,215 @@
+/*
+ * Polish layer (loaded after glass-theme.css).
+ * 1. One title per window      2. Dock that gets out of the way      3. Liquid snap preview & drag
+ * 4. Pointer-lit glass         5. Small press feedback               6. Narrow-window tables
+ */
+
+:root {
+  --sheen: rgb(255 255 255 / .55);
+  --sheen-edge: rgb(255 255 255 / .95);
+  --ease-liquid: cubic-bezier(.34, 1.36, .64, 1);
+  --ease-settle: cubic-bezier(.22, 1, .36, 1);
+}
+:root[data-theme="dark"] {
+  --sheen: rgb(150 190 255 / .13);
+  --sheen-edge: rgb(170 205 255 / .55);
+}
+
+/* ===================== 1. One title per window ===================== */
+/* Tiled or floating: the title bar names the window; the in-page H1 steps aside (still read by screen readers). */
+.workspace-frame:not([data-mode="maximized"]) :is(.page-header, .monitor-header) h1 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.workspace-frame:not([data-mode="maximized"]) .page-header:not(:has(.page-actions)) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+:root .workspace-stage .workspace-frame:not([data-mode="maximized"]) .workspace-window-title {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+/* Maximized: the large in-page title already names the window, so the bar keeps only its controls. */
+:root .workspace-stage .workspace-frame[data-mode="maximized"] .workspace-window-title { opacity: 0; }
+
+/* ===================== 2. Dock ===================== */
+:root .workspace-dock-strip .workspace-dock {
+  transition: translate .6s var(--ease-liquid), scale .6s var(--ease-liquid), opacity .3s ease;
+}
+/* Nothing to switch between: the sidebar is enough. */
+:root .workspace-dock-strip[data-hidden] .workspace-dock {
+  translate: 0 calc(100% + 30px);
+  scale: .88;
+  opacity: 0;
+  pointer-events: none;
+}
+/* Scrolling down: sink to a sliver, rise again on scroll up, hover or keyboard focus. */
+:root .workspace-dock-strip[data-collapsed] .workspace-dock:not(:hover, :focus-within) {
+  translate: 0 calc(100% + 2px);
+  opacity: .7;
+}
+/* The pane only reserves room for the dock while it is shown. */
+:root .workspace-shell:has(> .workspace-dock-strip[data-hidden]) .workspace-pane { padding-bottom: 28px; }
+
+/* ===================== 3. Liquid snap preview & drag ===================== */
+:root .workspace-snap-preview {
+  overflow: hidden;
+  border: 0;
+  border-radius: 26px;
+  background:
+    radial-gradient(120% 90% at var(--snap-x, 0%) var(--snap-y, 0%), color-mix(in srgb, var(--accent-icon) 30%, transparent), transparent 70%),
+    color-mix(in srgb, var(--accent-soft) 38%, transparent);
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in srgb, var(--focus-ring) 75%, transparent),
+    inset 0 0 50px color-mix(in srgb, var(--accent-icon) 22%, transparent),
+    0 24px 60px -24px color-mix(in srgb, var(--accent-icon) 70%, transparent);
+  backdrop-filter: blur(6px) saturate(1.5);
+  transform-origin: var(--snap-x, 0%) var(--snap-y, 0%);
+  transition: left .5s var(--ease-liquid), top .5s var(--ease-liquid), width .5s var(--ease-liquid), height .5s var(--ease-liquid);
+  animation: snap-pour .62s var(--ease-liquid) both;
+}
+/* A slow highlight runs across the surface like light on water. */
+:root .workspace-snap-preview::after {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  background: linear-gradient(115deg, transparent 38%, var(--sheen) 50%, transparent 62%);
+  animation: snap-shimmer 1.8s ease-in-out infinite;
+}
+.workspace-snap-preview[data-quadrant$="-left"] { --snap-x: 0%; }
+.workspace-snap-preview[data-quadrant$="-right"] { --snap-x: 100%; }
+.workspace-snap-preview[data-quadrant^="top-"] { --snap-y: 0%; }
+.workspace-snap-preview[data-quadrant^="bottom-"] { --snap-y: 100%; }
+@keyframes snap-pour {
+  0% { opacity: 0; transform: scale(.18); border-radius: 50%; }
+  55% { opacity: 1; border-radius: 40% 30% 36% 28%; }
+  100% { transform: none; border-radius: 26px; }
+}
+@keyframes snap-shimmer {
+  from { transform: translateX(-35%); }
+  to { transform: translateX(35%); }
+}
+
+/*
+ * Two-tier water glass:
+ * - The window canvas (`.workspace-frame`) uses unblurred crystal glass so the regular particle lattice
+ *   and water ripples in `.living-bg` shine through with 100% sharpness in margins and between cards.
+ * - The data cards and tables inside the window (`.panel`, `.metric-card`, `.assist-list`, `.table-wrap`)
+ *   use a rich frosted surface on top, so scattered particles never obscure text, tables or controls.
+ */
+:root[data-glass="on"] {
+  --content-material: rgb(245 248 254 / .24);
+  --card: rgb(255 255 255 / .88);
+}
+:root[data-theme="dark"][data-glass="on"] {
+  --content-material: rgb(14 20 33 / .26);
+  --card: rgb(22 29 44 / .82);
+}
+:root[data-glass="on"] .workspace-stage .workspace-frame,
+:root[data-glass="on"] .workspace-stage .workspace-frame:is([data-gesturing], [data-liquid]) {
+  background: var(--content-material);
+  backdrop-filter: none;
+}
+:root[data-glass="on"] :is(.panel, .metric-card, .metrics-grid.metrics-strip, .assist-list, .table-wrap) {
+  backdrop-filter: blur(18px) saturate(1.55);
+}
+:root .workspace-stage .workspace-frame[data-liquid] {
+  will-change: transform, border-radius;
+  box-shadow: var(--shadow-floating), 0 0 0 1px color-mix(in srgb, var(--accent-border) 60%, transparent);
+}
+
+/* ===================== 4. Pointer-lit glass ===================== */
+/* A soft light that follows the pointer across every glass surface (positions are viewport-fixed). */
+:root[data-glass="on"] :is(.sidebar, .topbar-actions) {
+  background:
+    radial-gradient(300px circle at var(--pointer-x, -999px) var(--pointer-y, -999px), var(--sheen), transparent 70%) fixed,
+    var(--glass-tint);
+}
+:root[data-glass="on"] .workspace-dock::before {
+  background:
+    radial-gradient(220px circle at var(--pointer-x, -999px) var(--pointer-y, -999px), var(--sheen), transparent 70%) fixed,
+    var(--glass-tint-clear);
+}
+/* Cards catch the light on their rim only, so text stays calm. */
+:root[data-glass="on"] :is(.panel, .metrics-grid.metrics-strip) { position: relative; }
+:root[data-glass="on"] :is(.panel, .metrics-grid.metrics-strip)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: radial-gradient(260px circle at var(--pointer-x, -999px) var(--pointer-y, -999px), var(--sheen-edge), transparent 72%) fixed;
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* ===================== 5. Press feedback ===================== */
+:root :is(.button, .icon-button, .window-button, .device-choice, .workspace-dock-item) {
+  transition: scale .45s var(--ease-liquid), background-color .2s ease, color .2s ease;
+}
+:root :is(.button, .icon-button, .window-button, .device-choice, .workspace-dock-item):active:not(:disabled) {
+  scale: .94;
+  transition-duration: .08s;
+}
+/* The primary action carries a slow glint, the one place the brand blue moves. */
+:root .button--primary { position: relative; overflow: hidden; isolation: isolate; }
+:root .button--primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(110deg, transparent 35%, rgb(255 255 255 / .35) 50%, transparent 65%);
+  translate: -100% 0;
+  transition: translate .8s var(--ease-settle);
+}
+:root .button--primary:hover::after { translate: 100% 0; }
+
+/* ===================== 6. Narrow windows & refined controls ===================== */
+.workspace-pane .data-table thead th { white-space: nowrap; }
+
+/* Capsule selects and unified solid-brand primary button across light & dark themes. */
+:root .field-select {
+  border-radius: 999px;
+  padding-inline: 14px 32px;
+  border: 1px solid var(--line-subtle);
+  backdrop-filter: blur(8px);
+}
+:root[data-theme="dark"] {
+  --control-blue: #3b72eb;
+  --control-blue-hover: #4e82f5;
+  --control-blue-ink: #ffffff;
+}
+:root[data-theme="dark"] .admin-editor-section {
+  background: var(--card);
+  border-color: var(--card-line);
+}
+:root[data-theme="dark"] :is(.admin-drawer-header, .admin-drawer-footer) {
+  background: transparent;
+  border-color: var(--floating-divider);
+}
+
+/* ===================== Accessibility ===================== */
+@media (prefers-reduced-motion: reduce) {
+  :root .workspace-snap-preview,
+  :root .workspace-snap-preview::after { animation: none; transition: none; }
+  :root .workspace-dock-strip .workspace-dock,
+  :root :is(.button, .icon-button, .window-button, .device-choice, .workspace-dock-item) { transition: none; }
+  :root .button--primary::after { display: none; }
+}
+@media (forced-colors: active) {
+  :root :is(.panel, .metrics-grid.metrics-strip)::after,
+  :root .workspace-snap-preview::after { display: none; }
+}

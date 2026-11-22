@@ -49,7 +49,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       const theme = preference === 'system' ? (media.matches ? 'dark' : 'light') : preference
       root.dataset.theme = theme
       setResolvedTheme(theme)
-      document.querySelector('[data-brand-icon]')?.setAttribute('href', import.meta.env.BASE_URL + 'branding/noah-vision-mark-' + theme + '.png')
+      document.querySelector('[data-brand-icon]')?.setAttribute('href', import.meta.env.BASE_URL + 'branding/noah-vision-mark-' + theme + '.svg')
       root.dataset.themePreference = preference
       document.querySelector('meta[name="theme-color"]')?.setAttribute('content', getComputedStyle(root).getPropertyValue('--canvas').trim())
     }

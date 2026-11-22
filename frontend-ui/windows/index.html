@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="AI Glasses 智能眼镜综合管理平台 · 本地演示" />
+    <meta name="description" content="NoahVision 智能眼镜综合管理平台 · 本地演示" />
     <meta name="theme-color" content="#f2f2f7" />
-    <link rel="icon" type="image/png" href="%BASE_URL%branding/noah-vision-mark-light.png" data-brand-icon />
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%branding/noah-vision-mark-light.svg" data-brand-icon />
     <script>
       // Apply the stored theme before the first paint, even when opening a route directly.
       (() => {
@@ -27,11 +27,11 @@
           ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
           : preference
         if (root.dataset.theme === 'dark') {
-          document.querySelector('[data-brand-icon]').setAttribute('href', '%BASE_URL%branding/noah-vision-mark-dark.png')
+          document.querySelector('[data-brand-icon]').setAttribute('href', '%BASE_URL%branding/noah-vision-mark-dark.svg')
         }
       })()
     </script>
-    <title>AI Glasses · 智能眼镜管理平台</title>
+    <title>NoahVision · 智能眼镜管理平台</title>
   </head>
   <body>
     <div id="root"></div>

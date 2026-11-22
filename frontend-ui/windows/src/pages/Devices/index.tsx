@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
-  ArrowRight, BatteryCharging, CircleHelp, Glasses, History, Radio,
-  SearchX, Wifi, WifiOff,
+  ArrowRight, CircleHelp, Glasses, Radio,
+  SearchX, WifiOff,
 } from 'lucide-react'
 import { DeviceStatus, EmptyState, MetricCard, PageHeader, Panel, deviceSourceLabels } from '../../components/common/ui'
 import SearchInput from '../../components/common/SearchInput'
@@ -17,12 +17,6 @@ const statusOptions: { value: StatusFilter; label: string }[] = [
   { value: 'online', label: '模拟在线' },
   { value: 'offline', label: '模拟离线' },
   { value: 'unknown', label: '连接未判定' },
-]
-
-const deviceGuides = [
-  { title: '连接状态', text: '核对模拟在线状态、网络和最近通信时间。', icon: Wifi },
-  { title: '硬件状态', text: '查看设备的电量和运行时间，识别缺失读数。', icon: BatteryCharging },
-  { title: '维护记录', text: '在设备详情回看 AI 调用、识别结果与异常。', icon: History },
 ]
 
 function BatteryReading({ value }: { value: number | null }) {
@@ -127,17 +121,6 @@ export default function Devices() {
             action={<button type="button" className="button button--quiet" onClick={resetFilters}>清除筛选</button>}
           />
         )}
-      </Panel>
-
-      <Panel title="设备管理内容" subtitle="在此核对设备状态，并通过详情页追溯运行记录。" icon={History}>
-        <div className="device-guides">
-          {deviceGuides.map(({ title, text, icon: Icon }) => (
-            <div className="device-guide" key={title}>
-              <span className="device-guide__icon" aria-hidden="true"><Icon size={18} /></span>
-              <div><h3>{title}</h3><p>{text}</p></div>
-            </div>
-          ))}
-        </div>
       </Panel>
     </div>
   )

@@ -1,4 +1,5 @@
-import { Suspense, useLayoutEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import type { UIEvent } from 'react'
 import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 import { LayoutGrid, ShieldAlert, X } from 'lucide-react'
 import { useAuth } from '../../services/auth'
@@ -92,12 +93,28 @@ export default function Workspace() {
   const pendingFocus = useRef<string | null>(null)
   const compact = !canSplitWorkspace(bounds)
   const canSnap = canSnapToQuadrant(bounds)
+  const [dockCollapsed, setDockCollapsed] = useState(false)
+  const scrollMemory = useRef(new WeakMap<EventTarget, number>())
+
+  /** iOS-style tab bar: the dock sinks while reading down a window and comes back on scroll up. */
+  function trackScroll(event: UIEvent<HTMLElement>) {
+    const target = event.target
+    if (!(target instanceof HTMLElement) || !target.classList.contains('workspace-pane')) return
+    const top = target.scrollTop
+    const before = scrollMemory.current.get(target) ?? top
+    scrollMemory.current.set(target, top)
+    const delta = top - before
+    if (top < 24 || delta < -6) setDockCollapsed(false)
+    else if (delta > 6) setDockCollapsed(true)
+  }
 
   const allowed = (route: WindowRoute) => !route.permission || can(route.permission)
   const windows = state.windows.filter(item => allowed(item.route))
   const active = windows.find(item => item.route.id === state.activeId && !item.minimized)
   const compactVisibleId = active?.route.id ?? foremost(windows)?.route.id
   const anyVisible = windows.some(item => !item.minimized && (!compact || compactVisibleId === item.route.id))
+  // Switching windows always brings the dock back.
+  useEffect(() => setDockCollapsed(false), [active?.route.id])
 
   function commit(next: WorkspaceState) {
     latest.current = next
@@ -326,21 +343,22 @@ export default function Workspace() {
   }
 
   const snapBounds = preview && canSnap ? getQuadrantRect(preview, bounds) : null
+  const dockHidden = windows.length === 0 || (windows.length === 1 && !windows[0].minimized && !windows[0].flight)
   return <WorkspaceContext.Provider value={{ openWindow }}>
     <Shell activeTo={active?.route.navPath} title={active?.route.title} dock={
-      <WorkspaceDock items={windows.map(item => ({
+      <WorkspaceDock hidden={dockHidden} collapsed={dockCollapsed} items={windows.map(item => ({
         id: item.route.id, title: item.route.title, icon: item.route.icon,
         active: active === item, minimized: item.minimized,
       }))} onSelect={(id) => focusWindow(id, true)} />
     }>
-      <main className="workspace-stage" id="main-content" ref={stage} tabIndex={-1} aria-label="窗口工作区">
+      <main className="workspace-stage" id="main-content" ref={stage} tabIndex={-1} aria-label="窗口工作区" onScrollCapture={trackScroll}>
         {!anyVisible && <div className="workspace-stage-message">
           <LayoutGrid size={25} aria-hidden="true" />
           <strong>{windows.length ? '窗口已收起' : '工作台'}</strong>
           <p>{windows.length ? '点击底部 Dock 恢复窗口，或从侧栏打开其他模块。' : <>从左侧导航打开模块。{canSnap && '把窗口拖到工作区四角可分屏查看。'}</>}</p>
           {!windows.length && <WorkspaceLink to="/" className="button">打开实时监控</WorkspaceLink>}
         </div>}
-        {snapBounds && <div className="workspace-snap-preview" style={{ left: snapBounds.x, top: snapBounds.y, width: snapBounds.width, height: snapBounds.height }} aria-hidden="true" />}
+        {snapBounds && <div className="workspace-snap-preview" data-quadrant={preview ?? undefined} style={{ left: snapBounds.x, top: snapBounds.y, width: snapBounds.width, height: snapBounds.height }} aria-hidden="true" />}
         {windows.map(item => <WindowView key={item.route.id} item={item} active={active === item} visible={!item.minimized && (!compact || compactVisibleId === item.route.id)}
           compact={compact} canSnap={canSnap} bounds={bounds} onFocus={() => focusWindow(item.route.id)} onSearch={(params) => changeSearch(item.route.id, params)}
           onGeometry={(rect) => commit(amend(latest.current, item.route.id, value => ({ ...value, mode: 'floating', restoreMode: 'floating', floating: clampWindowRect(rect, bounds) })))}

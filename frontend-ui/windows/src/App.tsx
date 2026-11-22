@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import Workspace from './components/workspace/Workspace'
+import LivingBackground from './components/effects/LivingBackground'
 import { LoginPage, RegisterPage } from './pages/Auth'
 import { AuthProvider, useAuth } from './services/auth'
 import { DemoProvider } from './services/demo'
@@ -13,6 +14,7 @@ function RequireSession() {
 export default function App() {
   return (
     <BrowserRouter>
+      <LivingBackground />
       <AuthProvider>
         <DemoProvider>
           <Routes>

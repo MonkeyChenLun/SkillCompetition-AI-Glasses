@@ -1,0 +1,76 @@
+.floating-monitor {
+  position: fixed;
+  z-index: 10;
+  right: 18px;
+  bottom: 76px;
+  width: min(344px, calc(100dvw - 24px), max(144px, calc((100dvh - 92px) * 16 / 9)));
+  min-width: 0;
+  padding: 0 6px 6px;
+  border: 1px solid var(--floating-divider);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-floating);
+}
+
+.floating-monitor-bar {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  min-height: 40px;
+}
+
+.floating-monitor-grip {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+  min-height: 40px;
+  padding-inline: 8px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.floating-monitor-grip:active { cursor: grabbing; }
+
+.floating-monitor-grip h2 {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+
+.floating-monitor-bar button {
+  display: grid;
+  flex: 0 0 32px;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.floating-monitor-bar button:hover { background: var(--soft); color: var(--ink); }
+.floating-monitor-bar button:last-child:hover { background: var(--tone-red-bg); color: var(--tone-red-fg); }
+.floating-monitor-bar button:focus-visible { outline-offset: -2px; }
+:root .floating-monitor .camera-feed { border-radius: var(--radius-inner); box-shadow: none; }
+:root .floating-monitor .floating-monitor-caption { border-radius: 7px; }
+.floating-monitor-caption > span { margin-inline-end: 5px; color: #b6c5da; font-weight: 400; }
+
+@media (max-height: 420px) {
+  .floating-monitor { bottom: 12px; }
+}
+
+@media (max-width: 620px) {
+  .floating-monitor { right: 12px; }
+}
+
+@media (forced-colors: active) {
+  .floating-monitor { border-color: CanvasText; }
+  .floating-monitor-bar button:focus-visible { outline-color: Highlight; }
+}

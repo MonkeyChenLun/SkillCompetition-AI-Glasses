@@ -457,8 +457,8 @@ export function SettingsPage() {
         </Panel>
       </div>
       <Panel title="关于系统" icon={AudioLines} action={<Badge>模拟数据</Badge>}>
-        <SettingRow title="产品名称"><span className="muted">AI Glasses 管理平台</span></SettingRow>
-        <SettingRow title="系统版本"><span className="mono muted">UI V0.1</span></SettingRow>
+        <SettingRow title="产品名称"><span className="muted">NoahVision 智能眼镜管理平台</span></SettingRow>
+        <SettingRow title="系统版本"><span className="mono muted">UI V0.1.7</span></SettingRow>
         <SettingRow title="系统环境"><span className="muted">比赛演示原型</span></SettingRow>
       </Panel>
     </ModulePage>

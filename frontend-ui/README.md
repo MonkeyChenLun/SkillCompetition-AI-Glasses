@@ -12,9 +12,10 @@ The Windows console runs in a desktop browser. Both apps use demo data. From eit
 
 ## Design and documentation
 
+- [V0.1.7 UI specification, NoahVision logo rationale & work log (`GminiSuggesion`)](windows/GminiSuggesion/)
 - [UI mockups](windows/design/mockups/) and [original logo, animation and brand rationale](windows/design/brand-originals/)
 - [Console user guide](windows/docs/guides/console-user-guide.docx), [development guidelines](windows/docs/development/) and [design reviews](windows/docs/reviews/)
 
 ## Earlier versions
 
-The [archive](archive/) holds the [v0.1.3 console](archive/windows/v0.1.3/), the [team console snapshot](archive/windows/team-console/), [intermediate design files](archive/windows/design-iterations/) and the [previous Android build and source](archive/android/previous/). Each design iteration contains only the files captured at that stage.
+The [archive](archive/) holds the [v0.1.4 console](archive/windows/v0.1.4/), the [v0.1.3 console](archive/windows/v0.1.3/), the [team console snapshot](archive/windows/team-console/), [intermediate design files](archive/windows/design-iterations/) and the [previous Android build and source](archive/android/previous/). Each design iteration contains only the files captured at that stage.

@@ -4,6 +4,7 @@ import { Activity, ChevronRight, LogOut, ShieldAlert } from 'lucide-react'
 import { useAuth } from '../../services/auth'
 import { ROLE_LABELS } from '../../services/permissions'
 import { Badge } from '../common/ui'
+import { replayBrandIntro } from '../common/BrandIntro'
 import BrandMark from '../common/BrandMark'
 import { WorkspaceLink } from '../workspace/workspaceContext'
 import { groups } from '../workspace/workspaceRoutes'
@@ -34,9 +35,9 @@ export default function Shell({ activeTo, title, dock, children }: { activeTo?: 
   return (
     <div className="app-shell">
       <aside className="sidebar" aria-label="侧边栏" ref={sidebarRef}>
-        <WorkspaceLink className="brand" to="/" aria-label="AI Glasses 实时监控">
+        <WorkspaceLink className="brand" to="/" aria-label="NoahVision 实时监控" title="NoahVision · 双击重播开场动画" onDoubleClick={replayBrandIntro}>
           <BrandMark alt="" />
-          <span><strong>AI Glasses</strong><small>智能眼镜管理平台</small></span>
+          <span><strong>NoahVision</strong><small>智能眼镜管理平台</small></span>
         </WorkspaceLink>
         <SidebarNavigation groups={available} activeTo={activeTo} />
         <div className="sidebar-bottom">

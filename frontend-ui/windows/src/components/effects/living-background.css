@@ -1,0 +1,70 @@
+/*
+ * Living water wallpaper (z-index: -1):
+ * Base water shader, bioluminescent particle lattice, water-ripple film, and soft optical veil all live
+ * inside `.living-bg` underneath the workspace windows so particles never obscure console content.
+ */
+.living-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  contain: strict;
+}
+
+.living-bg-base,
+.living-particles,
+.living-water-film {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/*
+ * Lightened optical veil over the water surface:
+ * Low-opacity radial matte mask + delicate 16px micro-dot diffuser so the water surface and particles
+ * shine through clearly underneath the translucent window glass without harsh glare.
+ */
+.living-bg-veil {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgb(25 52 108 / .02) 1px, transparent 0),
+    radial-gradient(64% 60% at 57% 53%, rgb(244 247 253 / .20) 0%, rgb(238 243 251 / .10) 56%, rgb(231 239 251 / .02) 100%),
+    radial-gradient(120% 100% at 50% 50%, transparent 66%, rgb(212 226 248 / .12) 100%);
+  background-size: 16px 16px, 100% 100%, 100% 100%;
+}
+
+:root[data-theme="dark"] .living-bg-veil {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgb(160 205 255 / .022) 1px, transparent 0),
+    radial-gradient(64% 60% at 57% 53%, rgb(10 15 26 / .22) 0%, rgb(9 14 24 / .12) 56%, rgb(7 12 22 / .04) 100%),
+    radial-gradient(120% 100% at 50% 50%, transparent 62%, rgb(4 8 16 / .22) 100%);
+  background-size: 16px 16px, 100% 100%, 100% 100%;
+}
+
+/* Film grain hides gradient banding on the background layer. */
+.living-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: .05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+:root[data-theme="dark"] .living-bg::after { opacity: .075; }
+
+/* The canvas replaces the static wallpaper gradients. */
+html[data-living-bg] body,
+html[data-living-bg] .app-shell,
+html[data-living-bg] .auth-screen { background: transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  .living-water-film, .living-particles { display: none; }
+}
+@media (forced-colors: active) {
+  .living-bg { display: none; }
+  html[data-living-bg] :is(.app-shell, .auth-screen) { background: Canvas; }
+}

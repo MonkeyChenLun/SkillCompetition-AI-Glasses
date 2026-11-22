@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'rea
 import { ArrowLeft, ArrowRight, CircleAlert, CircleCheck, Eye, EyeOff, FlaskConical, KeyRound, LayoutDashboard, ShieldCheck, UserRoundPlus } from 'lucide-react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import BrandMark from '../../components/common/BrandMark'
+import { replayBrandIntro } from '../../components/common/BrandIntro'
 import ThemeControl from '../../components/common/ThemeControl'
 import { useAuth } from '../../services/auth'
 import { normalizeUsername, validPasswordLength } from '../../services/authStorage'
@@ -23,9 +24,17 @@ function AuthFrame({ children }: { children: ReactNode }) {
   return (
     <div className="auth-screen">
       <header className="auth-top">
-        <div className="auth-brand">
+        <div
+          className="auth-brand"
+          role="button"
+          tabIndex={0}
+          title="点击重播 NoahVision 开场动画"
+          onClick={replayBrandIntro}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); replayBrandIntro() } }}
+          style={{ cursor: 'pointer' }}
+        >
           <BrandMark />
-          <div><strong>AI Glasses</strong><span>智能眼镜管理平台</span></div>
+          <div><strong>NoahVision</strong><span>智能眼镜管理平台</span></div>
         </div>
         <ThemeControl />
       </header>
@@ -45,7 +54,7 @@ function AuthFrame({ children }: { children: ReactNode }) {
           </aside>
         </div>
       </main>
-      <footer className="auth-footer"><span>AI Glasses · UI 原型 V0.1</span><span>演示账号和权限数据仅存于当前浏览器</span></footer>
+      <footer className="auth-footer"><span>NoahVision · 智能眼镜管理平台 V0.1.7</span><span>演示账号和权限数据仅存于当前浏览器</span></footer>
     </div>
   )
 }
