@@ -599,9 +599,10 @@ export default function LivingBackground() {
       const speed = clamp(segLen / Math.max(4, dtMs), 0, 3.2) // px/ms
       const ux = sdx / segLen
       const uy = sdy / segLen
-      const reach = clamp(44 + speed * 14, 44, 68)
+      // Honey-surface micro-bubbles: ultra-compact local displacement (max +-7px) with sticky viscous cling.
+      const reach = clamp(28 + speed * 8, 28, 44)
       const reach2 = reach * reach
-      const impulseBase = 125 + speed * 130
+      const impulseBase = 55 + speed * 58
 
       const boxMinX = Math.min(x0, x1) - reach
       const boxMaxX = Math.max(x0, x1) + reach
@@ -627,24 +628,23 @@ export default function LivingBackground() {
         const falloff = u * u
         const rx = dx / d
         const ry = dy / d
-        // Determine left/right bank of the trajectory so lattice points part heavily in thick viscous fluid.
         const cross = ux * dy - uy * dx
         const side = cross >= 0 ? 1 : -1
         const lx = -uy * side
         const ly = ux * side
 
-        // Viscous entrainment with restrained, compact spread amplitude.
-        const dirX = rx * 0.42 + lx * 0.68 + ux * 0.28
-        const dirY = ry * 0.42 + ly * 0.68 + uy * 0.28
+        // Sticky honey drag: bubbles cling and shift gently along + slightly aside from the finger.
+        const dirX = rx * 0.35 + lx * 0.58 + ux * 0.38
+        const dirY = ry * 0.35 + ly * 0.58 + uy * 0.38
 
-        const directShift = falloff * (3.0 + speed * 1.6)
-        p.ox = clamp(p.ox + dirX * directShift, -18, 18)
-        p.oy = clamp(p.oy + dirY * directShift, -18, 18)
+        const directShift = falloff * (1.2 + speed * 0.7)
+        p.ox = clamp(p.ox + dirX * directShift, -7.5, 7.5)
+        p.oy = clamp(p.oy + dirY * directShift, -7.5, 7.5)
 
         const push = impulseBase * falloff
         p.vx += dirX * push
         p.vy += dirY * push
-        p.flare = Math.min(1, p.flare + falloff * (0.65 + speed * 0.30))
+        p.flare = Math.min(1, p.flare + falloff * (0.52 + speed * 0.24))
       }
     }
 
@@ -714,23 +714,23 @@ export default function LivingBackground() {
     }
 
     function stepParticles(dt: number) {
-      // Viscous, thick-liquid lattice physics with restrained spread amplitude (max ±18px).
-      const drag = Math.exp(-10.5 * dt)
-      const springK = 14.0
-      const hoverR = 38
+      // Honey-bubble viscosity: ultra-heavy drag (zero scatter, syrupy +-7.5px micro-shift).
+      const drag = Math.exp(-15.5 * dt)
+      const springK = 10.5
+      const hoverR = 26
       const hoverR2 = hoverR * hoverR
-      const hasWaves = waveEnergy > 0.005
+      const hasWaves = waveEnergy > 0.006
       const ptx = pointer.tx
       const pty = pointer.ty
       const pSeen = pointer.seen
-      const flareDecay = Math.exp(-2.6 * dt)
+      const flareDecay = Math.exp(-2.2 * dt)
 
       for (let i = 0, len = particles.length; i < len; i++) {
         const p = particles[i]
         const px = p.hx + p.ox
         const py = p.hy + p.oy
 
-        // 1. Compact surface-tension parting around the resting cursor tip.
+        // 1. Delicate surface-tension nudge right next to the cursor tip.
         if (pSeen) {
           const dx = px - ptx
           const dy = py - pty
@@ -739,33 +739,33 @@ export default function LivingBackground() {
             if (d2 < hoverR2 && d2 > 0.01) {
               const d = Math.sqrt(d2)
               const f = (1 - d / hoverR) * (1 - d / hoverR)
-              p.vx += (dx / d) * f * 180 * dt
-              p.vy += (dy / d) * f * 180 * dt
-              p.flare = Math.min(1, p.flare + f * 1.4 * dt)
+              p.vx += (dx / d) * f * 85 * dt
+              p.vy += (dy / d) * f * 85 * dt
+              p.flare = Math.min(1, p.flare + f * 1.2 * dt)
             }
           }
         }
 
-        // 2. Restrained wave-slope coupling so thick viscous waves gently sway the lattice.
+        // 2. Subtle wave-slope swell like micro-bubbles clinging to thick honey.
         if (hasWaves) {
           const gx = clamp((px / cellPx) | 0, 1, gw - 2)
           const gy = clamp((py / cellPx) | 0, 1, gh - 2)
           const idx = gy * gw + gx
           const nx = (h0[idx + 1] - h0[idx - 1]) * 0.5
           const ny = (h0[idx + gw] - h0[idx - gw]) * 0.5
-          if (nx > 0.003 || nx < -0.003 || ny > 0.003 || ny < -0.003) {
-            p.vx += nx * 140 * dt
-            p.vy += ny * 140 * dt
+          if (nx > 0.004 || nx < -0.004 || ny > 0.004 || ny < -0.004) {
+            p.vx += nx * 65 * dt
+            p.vy += ny * 65 * dt
             const crest = (nx < 0 ? -nx : nx) + (ny < 0 ? -ny : ny)
-            if (crest > 0.025) p.flare = Math.min(1, p.flare + crest * 0.45)
+            if (crest > 0.03) p.flare = Math.min(1, p.flare + crest * 0.35)
           }
         }
 
-        // 3. Thick viscous return back to (hx, hy) with compact displacement ceiling.
+        // 3. Slow, syrupy over-damped creep back to (hx, hy) capped at +-7.5px.
         p.vx = (p.vx - springK * p.ox * dt) * drag
         p.vy = (p.vy - springK * p.oy * dt) * drag
-        p.ox = clamp(p.ox + p.vx * dt, -18, 18)
-        p.oy = clamp(p.oy + p.vy * dt, -18, 18)
+        p.ox = clamp(p.ox + p.vx * dt, -7.5, 7.5)
+        p.oy = clamp(p.oy + p.vy * dt, -7.5, 7.5)
         p.flare *= flareDecay
       }
     }
@@ -819,22 +819,21 @@ export default function LivingBackground() {
       const currentTheme = themeOf()
       const themeSprites = sprites[currentTheme]
       const dpr = particleDpr
-      // Crisp, clearly visible lattice on the water surface beneath the windows; bright flare along the wake.
-      const restAlpha = currentTheme === 'dark' ? 0.78 : 0.76
-      const restRadius = 4.2 * dpr
+      // Delicate honey-foam micro-bubbles: crisp, subtle glow, minimal swell.
+      const restAlpha = currentTheme === 'dark' ? 0.72 : 0.70
+      const restRadius = 3.5 * dpr
 
       for (let i = 0, len = particles.length; i < len; i++) {
         const p = particles[i]
-        // Slower, deeper viscous swell so the lattice breathes like heavy liquid glass.
-        const waveX = Math.sin(clock * 0.65 + p.phase) * 1.45
-        const waveY = Math.cos(clock * 0.55 + p.phase * 1.1) * 1.45
+        const waveX = Math.sin(clock * 0.55 + p.phase) * 0.65
+        const waveY = Math.cos(clock * 0.48 + p.phase * 1.1) * 0.65
         const x = (p.hx + p.ox + waveX) * dpr
         const y = (p.hy + p.oy + waveY) * dpr
 
         const flare = p.flare
-        const breath = 0.82 + 0.18 * Math.sin(clock * 1.6 + p.phase)
-        const alpha = clamp(restAlpha * breath + flare * 0.62, 0.12, 0.98)
-        const radius = restRadius + flare * 3.8 * dpr
+        const breath = 0.85 + 0.15 * Math.sin(clock * 1.3 + p.phase)
+        const alpha = clamp(restAlpha * breath + flare * 0.48, 0.14, 0.96)
+        const radius = restRadius + flare * 2.1 * dpr
         const sprite = flare > 0.22 ? themeSprites[2] : themeSprites[p.variant]
 
         ctx.globalAlpha = alpha
@@ -1014,8 +1013,8 @@ export default function LivingBackground() {
       pointer.lastT = event.timeStamp || performance.now()
       const scale = isOverConsoleContent(event.target) ? 0.35 : 0.56
       dropWater(event.clientX, event.clientY, 10, scale)
-      // Compact radial shockwave push on the surrounding particle lattice when tapping the water.
-      const reach = 52
+      // Honey-bubble local nudge when tapping the surface.
+      const reach = 34
       const cx = event.clientX
       const cy = event.clientY
       for (let i = 0, len = particles.length; i < len; i++) {
@@ -1026,11 +1025,11 @@ export default function LivingBackground() {
         const d = Math.hypot(dx, dy)
         if (d < reach && d > 0.1) {
           const f = (1 - d / reach) * (1 - d / reach)
-          p.ox = clamp(p.ox + (dx / d) * f * 4, -18, 18)
-          p.oy = clamp(p.oy + (dy / d) * f * 4, -18, 18)
-          p.vx += (dx / d) * f * 110
-          p.vy += (dy / d) * f * 110
-          p.flare = Math.min(1, p.flare + f * 0.78)
+          p.ox = clamp(p.ox + (dx / d) * f * 2.2, -7.5, 7.5)
+          p.oy = clamp(p.oy + (dy / d) * f * 2.2, -7.5, 7.5)
+          p.vx += (dx / d) * f * 52
+          p.vy += (dy / d) * f * 52
+          p.flare = Math.min(1, p.flare + f * 0.65)
         }
       }
     }
