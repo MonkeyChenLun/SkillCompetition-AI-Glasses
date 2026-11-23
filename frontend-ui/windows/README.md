@@ -1,6 +1,6 @@
-# NoahVision 智能眼镜管理平台 (V0.1.7)
+﻿# NoahVision 智能眼镜管理平台 (V0.1.8)
 
-面向电脑端浏览器的 V0.1.7 本地演示原型。设备、AI 事件、识别结果和统计均为模拟数据；摄像头未接入视频。项目不连接硬件、后端或模型服务。V0.1.7 完整的 UI 界面说明、NoahVision 品牌图腾寓意及开发工作日志见 [GminiSuggesion/](GminiSuggesion/)。
+面向电脑端浏览器的 V0.1.8 本地演示原型。设备、AI 事件、识别结果和统计均为模拟数据；摄像头未接入视频。项目不连接硬件、后端或模型服务。V0.1.8 完整的 UI 界面说明、NoahVision 品牌图腾寓意及开发工作日志见 [GminiSuggesion/](GminiSuggesion/)。
 
 ## 本地运行
 

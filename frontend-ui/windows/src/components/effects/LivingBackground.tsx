@@ -599,9 +599,9 @@ export default function LivingBackground() {
       const speed = clamp(segLen / Math.max(4, dtMs), 0, 3.2) // px/ms
       const ux = sdx / segLen
       const uy = sdy / segLen
-      const reach = clamp(58 + speed * 18, 58, 92)
+      const reach = clamp(72 + speed * 22, 72, 112)
       const reach2 = reach * reach
-      const impulseBase = 175 + speed * 195
+      const impulseBase = 240 + speed * 240
 
       const boxMinX = Math.min(x0, x1) - reach
       const boxMaxX = Math.max(x0, x1) + reach
@@ -627,24 +627,24 @@ export default function LivingBackground() {
         const falloff = u * u
         const rx = dx / d
         const ry = dy / d
-        // Determine left/right bank of the trajectory so lattice points part cleanly to either side.
+        // Determine left/right bank of the trajectory so lattice points part heavily in thick viscous fluid.
         const cross = ux * dy - uy * dx
         const side = cross >= 0 ? 1 : -1
         const lx = -uy * side
         const ly = ux * side
 
-        const dirX = rx * 0.46 + lx * 0.72 + ux * 0.14
-        const dirY = ry * 0.46 + ly * 0.72 + uy * 0.14
+        // Viscous entrainment: thicker fluid pulls particles slightly forward along the stroke as they part.
+        const dirX = rx * 0.42 + lx * 0.68 + ux * 0.28
+        const dirY = ry * 0.42 + ly * 0.68 + uy * 0.28
 
-        // Immediate parting displacement + velocity impulse so the trajectory channel is crisp, then snaps back fast.
-        const directShift = falloff * (4.2 + speed * 2.4)
-        p.ox = clamp(p.ox + dirX * directShift, -32, 32)
-        p.oy = clamp(p.oy + dirY * directShift, -32, 32)
+        const directShift = falloff * (6.2 + speed * 3.4)
+        p.ox = clamp(p.ox + dirX * directShift, -44, 44)
+        p.oy = clamp(p.oy + dirY * directShift, -44, 44)
 
         const push = impulseBase * falloff
         p.vx += dirX * push
         p.vy += dirY * push
-        p.flare = Math.min(1, p.flare + falloff * (0.65 + speed * 0.32))
+        p.flare = Math.min(1, p.flare + falloff * (0.68 + speed * 0.32))
       }
     }
 
@@ -672,7 +672,8 @@ export default function LivingBackground() {
     function stepWaveSubstep() {
       const w = gw
       const h = gh
-      const damping = 0.981
+      // Higher viscosity damping for thicker, heavier liquid ripples.
+      const damping = 0.968
       for (let y = 1; y < h - 1; y++) {
         const row = y * w
         for (let x = 1; x < w - 1; x++) {
@@ -680,7 +681,7 @@ export default function LivingBackground() {
           const avg =
             (h0[i - 1] + h0[i + 1] + h0[i - w] + h0[i + w]) * 0.20 +
             (h0[i - w - 1] + h0[i - w + 1] + h0[i + w - 1] + h0[i + w + 1]) * 0.05
-          h1[i] = (0.14 * h0[i] + 1.86 * avg - h1[i]) * damping
+          h1[i] = (0.22 * h0[i] + 1.78 * avg - h1[i]) * damping
         }
       }
       const swap = h0
@@ -713,23 +714,23 @@ export default function LivingBackground() {
     }
 
     function stepParticles(dt: number) {
-      // Fast, near-critically damped elastic lattice recovery (~0.5–0.8s back to grid formation).
-      const drag = Math.exp(-6.8 * dt)
-      const springK = 16.5
-      const hoverR = 46
+      // Viscous, thick-liquid lattice physics: heavy drag (over-damped syrupy creep, zero jitter).
+      const drag = Math.exp(-10.5 * dt)
+      const springK = 14.0
+      const hoverR = 54
       const hoverR2 = hoverR * hoverR
-      const hasWaves = waveEnergy > 0.006
+      const hasWaves = waveEnergy > 0.005
       const ptx = pointer.tx
       const pty = pointer.ty
       const pSeen = pointer.seen
-      const flareDecay = Math.exp(-3.6 * dt)
+      const flareDecay = Math.exp(-2.6 * dt)
 
       for (let i = 0, len = particles.length; i < len; i++) {
         const p = particles[i]
         const px = p.hx + p.ox
         const py = p.hy + p.oy
 
-        // 1. Gentle surface-tension parting around the resting cursor tip.
+        // 1. Heavy surface-tension parting around the resting cursor tip.
         if (pSeen) {
           const dx = px - ptx
           const dy = py - pty
@@ -738,33 +739,33 @@ export default function LivingBackground() {
             if (d2 < hoverR2 && d2 > 0.01) {
               const d = Math.sqrt(d2)
               const f = (1 - d / hoverR) * (1 - d / hoverR)
-              p.vx += (dx / d) * f * 280 * dt
-              p.vy += (dy / d) * f * 280 * dt
-              p.flare = Math.min(1, p.flare + f * 1.4 * dt)
+              p.vx += (dx / d) * f * 360 * dt
+              p.vy += (dy / d) * f * 360 * dt
+              p.flare = Math.min(1, p.flare + f * 1.5 * dt)
             }
           }
         }
 
-        // 2. Subtle wave-slope coupling so ripples undulate through the grid without keeping it scattered.
+        // 2. Heavy wave-slope coupling so thick viscous waves carry the particle matrix deeply.
         if (hasWaves) {
           const gx = clamp((px / cellPx) | 0, 1, gw - 2)
           const gy = clamp((py / cellPx) | 0, 1, gh - 2)
           const idx = gy * gw + gx
           const nx = (h0[idx + 1] - h0[idx - 1]) * 0.5
           const ny = (h0[idx + gw] - h0[idx - gw]) * 0.5
-          if (nx > 0.004 || nx < -0.004 || ny > 0.004 || ny < -0.004) {
-            p.vx += nx * 185 * dt
-            p.vy += ny * 185 * dt
+          if (nx > 0.003 || nx < -0.003 || ny > 0.003 || ny < -0.003) {
+            p.vx += nx * 290 * dt
+            p.vy += ny * 290 * dt
             const crest = (nx < 0 ? -nx : nx) + (ny < 0 ? -ny : ny)
-            if (crest > 0.03) p.flare = Math.min(1, p.flare + crest * 0.4)
+            if (crest > 0.025) p.flare = Math.min(1, p.flare + crest * 0.5)
           }
         }
 
-        // 3. Snappy elastic lattice spring back to (hx, hy) + water viscosity.
+        // 3. Thick viscous return back to (hx, hy) with heavy fluid drag.
         p.vx = (p.vx - springK * p.ox * dt) * drag
         p.vy = (p.vy - springK * p.oy * dt) * drag
-        p.ox = clamp(p.ox + p.vx * dt, -34, 34)
-        p.oy = clamp(p.oy + p.vy * dt, -34, 34)
+        p.ox = clamp(p.ox + p.vx * dt, -44, 44)
+        p.oy = clamp(p.oy + p.vy * dt, -44, 44)
         p.flare *= flareDecay
       }
     }
@@ -785,7 +786,7 @@ export default function LivingBackground() {
           }
         }
         if (waveEnergy > 0) {
-          stepWaveSubstep()
+          // Single slower substep per frame gives thicker, more viscous wave propagation.
           stepWaveSubstep()
           packWaveTexture()
         }
@@ -824,9 +825,9 @@ export default function LivingBackground() {
 
       for (let i = 0, len = particles.length; i < len; i++) {
         const p = particles[i]
-        // Subtle water-wave breathing so the regular grid feels alive on the water surface.
-        const waveX = Math.sin(clock * 1.15 + p.phase) * 0.9
-        const waveY = Math.cos(clock * 0.95 + p.phase * 1.1) * 0.9
+        // Slower, deeper viscous swell so the lattice breathes like heavy liquid glass.
+        const waveX = Math.sin(clock * 0.65 + p.phase) * 1.45
+        const waveY = Math.cos(clock * 0.55 + p.phase * 1.1) * 1.45
         const x = (p.hx + p.ox + waveX) * dpr
         const y = (p.hy + p.oy + waveY) * dpr
 

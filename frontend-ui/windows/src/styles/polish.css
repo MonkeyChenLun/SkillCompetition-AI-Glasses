@@ -101,24 +101,31 @@
 }
 
 /*
- * Two-tier water glass:
- * - The window canvas (`.workspace-frame`) uses unblurred crystal glass so the regular particle lattice
- *   and water ripples in `.living-bg` shine through with 100% sharpness in margins and between cards.
- * - The data cards and tables inside the window (`.panel`, `.metric-card`, `.assist-list`, `.table-wrap`)
- *   use a rich frosted surface on top, so scattered particles never obscure text, tables or controls.
+ * Dynamic Frosted-to-Clear Water Glass (V0.1.8):
+ * - At rest, the window canvas (`.workspace-frame`) uses a calm 26px Gaussian frosted glass so the
+ *   underlying particle lattice softens into a subtle ambient glow and never distracts from reading.
+ * - While picked up and dragged (`[data-gesturing]` / `[data-liquid]`), the window clears up into
+ *   near-transparent crystal glass so the viscous fluid and particle matrix shine vividly underneath.
  */
 :root[data-glass="on"] {
-  --content-material: rgb(245 248 254 / .24);
+  --content-material: rgb(245 248 254 / .66);
+  --content-material-drag: rgb(245 248 254 / .20);
   --card: rgb(255 255 255 / .88);
 }
 :root[data-theme="dark"][data-glass="on"] {
-  --content-material: rgb(14 20 33 / .26);
+  --content-material: rgb(14 20 33 / .68);
+  --content-material-drag: rgb(14 20 33 / .22);
   --card: rgb(22 29 44 / .82);
 }
-:root[data-glass="on"] .workspace-stage .workspace-frame,
-:root[data-glass="on"] .workspace-stage .workspace-frame:is([data-gesturing], [data-liquid]) {
+:root[data-glass="on"] .workspace-stage .workspace-frame {
   background: var(--content-material);
-  backdrop-filter: none;
+  backdrop-filter: blur(26px) saturate(1.75);
+  transition: background-color .32s ease, backdrop-filter .32s ease, box-shadow .32s ease;
+}
+:root[data-glass="on"] .workspace-stage .workspace-frame:is([data-gesturing], [data-liquid]) {
+  background: var(--content-material-drag);
+  backdrop-filter: blur(3px) saturate(1.6);
+  transition: background-color .18s ease, backdrop-filter .18s ease, box-shadow .22s ease;
 }
 :root[data-glass="on"] :is(.panel, .metric-card, .metrics-grid.metrics-strip, .assist-list, .table-wrap) {
   backdrop-filter: blur(18px) saturate(1.55);
