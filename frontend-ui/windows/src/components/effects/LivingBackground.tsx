@@ -48,8 +48,8 @@ const palettes: Record<'light' | 'dark', Palette> = {
     base: [[226, 236, 251], [233, 240, 249], [229, 243, 244]],
     blobs: [[112, 160, 252], [106, 206, 228], [186, 208, 252], [174, 230, 222], [168, 154, 248], [122, 188, 252]],
     alphas: [0.88, 0.82, 0.85, 0.85, 0.40, 0.48],
-    cursor: [255, 255, 255],
-    cursorAlpha: 0.34,
+    cursor: [238, 246, 255],
+    cursorAlpha: 0.14,
     causticTint: [225, 240, 255],
     focusColor: [160, 214, 252],
     specColor: [248, 252, 255],
@@ -589,8 +589,8 @@ export default function LivingBackground() {
       waveEnergy = 1
     }
 
-    // Stiff underwater lily-pad stems: firmly rooted, tiny radial yield (max 2.4px), zero wobble.
-    const STEM_MAX_OFFSET = 2.4
+    // Stiff underwater lily-pad stems: firmly rooted, tiny cohesive slipstream yield (max 2.0px), zero parting gap.
+    const STEM_MAX_OFFSET = 2.0
     const clampStemOffset = (p: LatticeParticle) => {
       const r2 = p.ox * p.ox + p.oy * p.oy
       if (r2 > STEM_MAX_OFFSET * STEM_MAX_OFFSET) {
@@ -600,7 +600,10 @@ export default function LivingBackground() {
       }
     }
 
-    /** Gently brush stiff-stemmed lattice particles along (x0, y0) -> (x1, y1) with minimal deflection. */
+    /**
+     * Brush stiff-stemmed lattice particles along (x0, y0) -> (x1, y1) with pure tangential drag.
+     * Zero radial/lateral parting ensures the cursor never carves a blank gap through the lattice.
+     */
     function partParticlesAlongSegment(x0: number, y0: number, x1: number, y1: number, dtMs: number, scale = 1) {
       const sdx = x1 - x0
       const sdy = y1 - y0
@@ -610,9 +613,11 @@ export default function LivingBackground() {
       const speed = clamp(segLen / Math.max(4, dtMs), 0, 3.2) // px/ms
       const ux = sdx / segLen
       const uy = sdy / segLen
-      const reach = clamp(22 + speed * 5, 22, 34)
+      const reach = clamp(32 + speed * 8, 32, 48)
       const reach2 = reach * reach
-      const impulseBase = (16 + speed * 18) * scale
+      const sigma = reach * 0.48
+      const invTwoSigma2 = 1 / (2 * sigma * sigma)
+      const impulseBase = (18 + speed * 18) * scale
       const frameScale = Math.min(1, dtMs / 16) * scale
 
       const boxMinX = Math.min(x0, x1) - reach
@@ -634,32 +639,20 @@ export default function LivingBackground() {
         const d2 = dx * dx + dy * dy
         if (d2 >= reach2) continue
 
-        const d = Math.sqrt(d2) || 0.001
-        const u = 1 - d / reach
-        const falloff = u * u
-        const rx = dx / d
-        const ry = dy / d
-        const cross = ux * dy - uy * dx
-        const side = cross >= 0 ? 1 : -1
-        const lx = -uy * side
-        const ly = ux * side
-
-        // Stiff-stem resistance: harder to bend the further the pad tilts from its root.
+        // Smooth Gaussian slipstream: nearby particles lean slightly together along cursor motion (no void).
+        const falloff = Math.exp(-d2 * invTwoSigma2)
         const curDist = Math.hypot(p.ox, p.oy)
         const stemYield = clamp(1 - curDist / STEM_MAX_OFFSET, 0.08, 1)
 
-        const dirX = rx * 0.35 + lx * 0.58 + ux * 0.38
-        const dirY = ry * 0.35 + ly * 0.58 + uy * 0.38
-
-        const directShift = falloff * (0.12 + speed * 0.08) * frameScale * stemYield
-        p.ox += dirX * directShift
-        p.oy += dirY * directShift
+        const directShift = falloff * (0.14 + speed * 0.08) * frameScale * stemYield
+        p.ox += ux * directShift
+        p.oy += uy * directShift
         clampStemOffset(p)
 
         const push = impulseBase * falloff * stemYield
-        p.vx += dirX * push
-        p.vy += dirY * push
-        p.flare = Math.min(1, p.flare + falloff * (0.32 + speed * 0.14) * scale)
+        p.vx += ux * push
+        p.vy += uy * push
+        p.flare = Math.min(1, p.flare + falloff * (0.34 + speed * 0.14) * scale)
       }
     }
 
@@ -729,13 +722,13 @@ export default function LivingBackground() {
     }
 
     function stepParticles(dt: number) {
-      // Stiff underwater stem + viscous honey damping: firmly anchored (zeta ~ 1.31, zero wobble).
+      // Stiff underwater stem + viscous honey damping: firmly anchored (zeta ~ 1.29, zero wobble, zero gap).
       const pdt = Math.min(dt, 0.032)
       const drag = Math.exp(-20 * pdt)
-      const springK = 58
-      const hoverR = 22
+      const springK = 60
+      const hoverR = 34
       const hoverR2 = hoverR * hoverR
-      const hasWaves = waveEnergy > 0.014
+      const hasWaves = waveEnergy > 0.016
       const ptx = pointer.tx
       const pty = pointer.ty
       const pSeen = pointer.seen
@@ -746,38 +739,35 @@ export default function LivingBackground() {
         const px = p.hx + p.ox
         const py = p.hy + p.oy
 
-        // 1. Minimal surface-tension brush right beneath the cursor tip.
+        // 1. Subtle luminous awareness under the cursor tip — zero outward push so no blank circle forms.
         if (pSeen) {
           const dx = px - ptx
           const dy = py - pty
           if (dx > -hoverR && dx < hoverR && dy > -hoverR && dy < hoverR) {
             const d2 = dx * dx + dy * dy
-            if (d2 < hoverR2 && d2 > 0.01) {
-              const d = Math.sqrt(d2)
-              const f = (1 - d / hoverR) * (1 - d / hoverR)
-              p.vx += (dx / d) * f * 22 * pdt
-              p.vy += (dy / d) * f * 22 * pdt
-              p.flare = Math.min(1, p.flare + f * 0.45 * pdt)
+            if (d2 < hoverR2) {
+              const f = 1 - Math.sqrt(d2) / hoverR
+              p.flare = Math.min(1, p.flare + f * f * 0.42 * pdt)
             }
           }
         }
 
-        // 2. Stiff stems resist passing ripples — only strong wave crests cause a tiny micro-tremor.
+        // 2. Stiff stems resist passing ripples — only strong wave crests cause a barely-perceptible shimmer.
         if (hasWaves) {
           const gx = clamp((px / cellPx) | 0, 1, gw - 2)
           const gy = clamp((py / cellPx) | 0, 1, gh - 2)
           const idx = gy * gw + gx
           const nx = (h0[idx + 1] - h0[idx - 1]) * 0.5
           const ny = (h0[idx + gw] - h0[idx - gw]) * 0.5
-          if (nx > 0.015 || nx < -0.015 || ny > 0.015 || ny < -0.015) {
-            p.vx += nx * 12 * pdt
-            p.vy += ny * 12 * pdt
+          if (nx > 0.018 || nx < -0.018 || ny > 0.018 || ny < -0.018) {
+            p.vx += nx * 8 * pdt
+            p.vy += ny * 8 * pdt
             const crest = (nx < 0 ? -nx : nx) + (ny < 0 ? -ny : ny)
             if (crest > 0.06) p.flare = Math.min(1, p.flare + crest * 0.10)
           }
         }
 
-        // 3. Firm overdamped stem restoration back to (hx, hy), radially capped at 2.4px.
+        // 3. Firm overdamped stem restoration back to (hx, hy), radially capped at 2.0px.
         p.vx = (p.vx - springK * p.ox * pdt) * drag
         p.vy = (p.vy - springK * p.oy * pdt) * drag
         p.ox += p.vx * pdt
@@ -1018,8 +1008,8 @@ export default function LivingBackground() {
       pointer.lastT = event.timeStamp || performance.now()
       const scale = isOverConsoleContent(event.target) ? 0.35 : 0.56
       dropWater(event.clientX, event.clientY, 10, scale)
-      // Stiff-stem local micro-recoil when tapping the surface.
-      const reach = 28
+      // Soft luminous pulse on tap — zero outward scatter so clicking never opens a blank hole.
+      const reach = 36
       const cx = event.clientX
       const cy = event.clientY
       for (let i = 0, len = particles.length; i < len; i++) {
@@ -1028,14 +1018,9 @@ export default function LivingBackground() {
         const dy = p.hy + p.oy - cy
         if (dx < -reach || dx > reach || dy < -reach || dy > reach) continue
         const d = Math.hypot(dx, dy)
-        if (d < reach && d > 0.1) {
+        if (d < reach) {
           const f = (1 - d / reach) * (1 - d / reach)
-          p.ox += (dx / d) * f * 0.45 * scale
-          p.oy += (dy / d) * f * 0.45 * scale
-          clampStemOffset(p)
-          p.vx += (dx / d) * f * 20 * scale
-          p.vy += (dy / d) * f * 20 * scale
-          p.flare = Math.min(1, p.flare + f * 0.36)
+          p.flare = Math.min(1, p.flare + f * 0.45)
         }
       }
     }
