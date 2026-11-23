@@ -10,12 +10,14 @@ export const moduleAnalytics = {
 } satisfies Record<FeatureId, { calls: number; failures: number; elapsedMs: number }>
 
 export const moduleTrends = [
-  { time: '09:00', calls: 24, latency: 820 },
-  { time: '10:00', calls: 47, latency: 760 },
-  { time: '11:00', calls: 35, latency: 920 },
-  { time: '12:00', calls: 64, latency: 850 },
-  { time: '13:00', calls: 53, latency: 1180 },
-  { time: '14:00', calls: 89, latency: 980 },
+  { time: '08:00', calls: 18, latency: 740, successRate: 98.8 },
+  { time: '09:00', calls: 24, latency: 820, successRate: 98.1 },
+  { time: '10:00', calls: 47, latency: 760, successRate: 97.9 },
+  { time: '11:00', calls: 35, latency: 920, successRate: 97.1 },
+  { time: '12:00', calls: 64, latency: 850, successRate: 97.6 },
+  { time: '13:00', calls: 53, latency: 1180, successRate: 95.8 },
+  { time: '14:00', calls: 89, latency: 980, successRate: 96.9 },
+  { time: '15:00', calls: 76, latency: 890, successRate: 97.5 },
 ]
 
 export type SampleEligibility = 'unchecked' | 'eligible' | 'excluded'

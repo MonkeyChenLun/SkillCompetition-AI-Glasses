@@ -14,9 +14,12 @@ import GlassSegmentedControl from '../../components/common/GlassSegmentedControl
 import { WorkspaceLink, useWindow } from '../../components/workspace/workspaceContext'
 import { moduleDatasets, moduleModels, moduleTrends, type DemoSample, type SampleEligibility } from '../../mocks/modules'
 import { useAuth } from '../../services/auth'
-import { devices, features, formatTime, seedEvents, totalCalls, useDemoAnalytics, useDemoEvents, useDemoReviews, useDemoSettings } from '../../services/demo'
+import { devices, features, formatTime, seedEvents, totalCalls, useDemoAnalytics, useDemoEvents, useDemoReviews, useDemoSettings, useSimulationStatus } from '../../services/demo'
 import { chartAnimationMs } from '../../services/motion'
-import type { AIEvent, ReviewDecision, ReviewState } from '../../types'
+import type { AIEvent, FeatureId, ReviewDecision, ReviewState } from '../../types'
+import {
+  buildFeatureRows, DistributionDonutChart, DualTrendChart, HealthRadarChart, PerformanceBarChart,
+} from './AnalyticsCharts'
 import Switch from './Switch'
 import './modules.css'
 
@@ -75,25 +78,83 @@ function Trend({ mode }: { mode: 'calls' | 'latency' }) {
 
 export function AnalyticsPage() {
   const analytics = useDemoAnalytics()
+  const { simulation } = useSimulationStatus()
+  const [selectedFeatureId, setSelectedFeatureId] = useState<FeatureId | null>(null)
   const totals = totalCalls(analytics)
+  const rows = buildFeatureRows(analytics)
+  const selectedRow = rows.find((row) => row.id === selectedFeatureId) ?? null
+
   return (
-    <ModulePage title="AI 运行分析" description="查看六项 AI 功能的调用量、成功率与处理耗时。">
+    <ModulePage title="AI 运行分析" description="查看六项 AI 功能的调用量、成功率、响应耗时与六维健康度分析。">
       <div className="metrics-grid">
         <MetricCard label="AI 总调用量" value={number.format(totals.calls)} icon={Activity} caption="模拟基线及本轮新增" highlightChanges />
         <MetricCard label="任务成功率" value={`${((1 - totals.failures / totals.calls) * 100).toFixed(1)}%`} icon={CheckCircle2} caption="成功调用 / 总调用" />
         <MetricCard label="平均处理耗时" value={`${(totals.elapsedMs / totals.calls / 1000).toFixed(2)} s`} icon={Clock3} caption="业务调用 · 按调用量加权" />
         <MetricCard label="失败请求" value={totals.failures} icon={CircleAlert} caption="模拟基线及本轮新增" />
       </div>
-      <Panel title="AI 请求趋势" subtitle="历史演示日的小时抽样，不含本轮新增" icon={ChartNoAxesCombined} action={<Badge>模拟数据</Badge>}>
-        <Trend mode="calls" />
-      </Panel>
-      <Panel title="六项 AI 功能运行概览" subtitle="按业务调用统计，与模型服务的单次探测分开计算。" icon={BrainCircuit}>
-        <Table headings={['AI 功能', '调用量', '成功率', '失败数', '平均耗时']}>
-          {features.map(({ id, name }) => {
-            const item = analytics[id]
-            return <tr key={id}><th scope="row">{name}</th><td>{number.format(item.calls)}</td>
-              <td>{((1 - item.failures / item.calls) * 100).toFixed(1)}%</td><td>{item.failures}</td><td>{(item.elapsedMs / item.calls / 1000).toFixed(1)} s</td>
-            </tr>
+
+      <DualTrendChart analytics={analytics} isSimulating={simulation === 'running'} />
+
+      <div className="analytics-charts-split">
+        <DistributionDonutChart
+          rows={rows}
+          selectedFeatureId={selectedFeatureId}
+          onSelectFeature={setSelectedFeatureId}
+        />
+        <HealthRadarChart rows={rows} selectedFeatureId={selectedFeatureId} />
+      </div>
+
+      <PerformanceBarChart
+        rows={rows}
+        selectedFeatureId={selectedFeatureId}
+        onSelectFeature={setSelectedFeatureId}
+      />
+
+      <Panel
+        title="六项 AI 功能运行概览"
+        subtitle={selectedRow ? `已联动聚焦「${selectedRow.name}」，再次点击行或图表可取消选中。` : '点击任意功能行或上方图表元素，即可双向联动高亮指标。'}
+        icon={BrainCircuit}
+        action={
+          selectedRow ? (
+            <button type="button" className="button button--quiet" onClick={() => setSelectedFeatureId(null)}>
+              清除聚焦 · {selectedRow.shortName}
+            </button>
+          ) : (
+            <Badge>6 项能力</Badge>
+          )
+        }
+      >
+        <Table headings={['AI 功能', '调用量', '占比', '成功率', '失败数', '平均耗时', '健康分']}>
+          {rows.map((row) => {
+            const isSelected = selectedFeatureId === row.id
+            const rateTone = row.successRate >= 97.5 ? 'green' : row.successRate >= 96 ? 'blue' : 'amber'
+            return (
+              <tr
+                key={row.id}
+                className={`analytics-table-row${isSelected ? ' module-row-active' : ''}`}
+                onClick={() => setSelectedFeatureId(isSelected ? null : row.id)}
+              >
+                <th scope="row">
+                  <span className="analytics-feature-cell">
+                    <span className="analytics-dot" style={{ background: row.color }} aria-hidden="true" />
+                    <span>{row.name}</span>
+                  </span>
+                </th>
+                <td className="mono">{number.format(row.calls)}</td>
+                <td className="mono muted">{row.share.toFixed(1)}%</td>
+                <td>
+                  <div className="analytics-rate-cell">
+                    <Badge tone={rateTone}>{row.successRate.toFixed(1)}%</Badge>
+                    <span className="analytics-rate-track" aria-hidden="true">
+                      <span className="analytics-rate-fill" style={{ width: `${row.successRate}%`, background: row.color }} />
+                    </span>
+                  </div>
+                </td>
+                <td className="mono">{row.failures}</td>
+                <td className="mono">{row.avgSec.toFixed(2)} s</td>
+                <td><Badge tone={row.healthScore >= 78 ? 'teal' : row.healthScore >= 65 ? 'blue' : 'amber'}>{row.healthScore} 分</Badge></td>
+              </tr>
+            )
           })}
         </Table>
       </Panel>
@@ -458,7 +519,7 @@ export function SettingsPage() {
       </div>
       <Panel title="关于系统" icon={AudioLines} action={<Badge>模拟数据</Badge>}>
         <SettingRow title="产品名称"><span className="muted">NoahVision 智能眼镜管理平台</span></SettingRow>
-        <SettingRow title="系统版本"><span className="mono muted">UI V0.1.8</span></SettingRow>
+        <SettingRow title="系统版本"><span className="mono muted">UI V0.1.9</span></SettingRow>
         <SettingRow title="系统环境"><span className="muted">比赛演示原型</span></SettingRow>
       </Panel>
     </ModulePage>

@@ -54,7 +54,7 @@ function AuthFrame({ children }: { children: ReactNode }) {
           </aside>
         </div>
       </main>
-      <footer className="auth-footer"><span>NoahVision · 智能眼镜管理平台 V0.1.8</span><span>演示账号和权限数据仅存于当前浏览器</span></footer>
+      <footer className="auth-footer"><span>NoahVision · 智能眼镜管理平台 V0.1.9</span><span>演示账号和权限数据仅存于当前浏览器</span></footer>
     </div>
   )
 }
