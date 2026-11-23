@@ -67,6 +67,7 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+  contain: layout paint style;
   border: 1px solid var(--floating-divider);
   border-radius: 17px;
   /* Page-grey ground so white panels read as cards, as in the base visual spec. */
@@ -80,6 +81,12 @@
 .workspace-frame[data-mode="maximized"] { box-shadow: var(--shadow-panel); }
 .workspace-frame[aria-hidden="true"] { pointer-events: none; }
 .workspace-frame[aria-hidden="true"]:not([data-unfolding]) { visibility: hidden; }
+.workspace-frame[data-occluded] {
+  visibility: hidden;
+  content-visibility: hidden;
+  pointer-events: none;
+  backdrop-filter: none !important;
+}
 .workspace-frame:focus-visible { outline-offset: -2px; }
 .workspace-titlebar {
   position: relative;

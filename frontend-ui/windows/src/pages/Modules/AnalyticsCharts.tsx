@@ -252,7 +252,11 @@ export function DualTrendChart({
               />
             )}
 
-            <Tooltip content={<TrendTooltip />} cursor={{ fill: 'var(--accent-soft)', fillOpacity: 0.45 }} />
+            <Tooltip
+              content={<TrendTooltip />}
+              wrapperStyle={{ zIndex: 30, pointerEvents: 'none' }}
+              cursor={{ fill: 'var(--accent-soft)', fillOpacity: 0.45 }}
+            />
 
             {mode !== 'calls' && (
               <ReferenceLine
@@ -509,6 +513,15 @@ export function DistributionDonutChart({
     >
       <div className="analytics-donut-layout">
         <div className="analytics-donut-stage" role="group" aria-label="AI 调用占比动态环形图">
+          <div className="analytics-donut-center" aria-live="polite">
+            <span className="analytics-donut-label">{activeSlice ? activeSlice.name : 'AI 总调用'}</span>
+            <strong className="analytics-donut-value">
+              {activeSlice ? `${activeSlice.share.toFixed(1)}%` : number.format(total)}
+            </strong>
+            <span className="analytics-donut-sub">
+              {activeSlice ? `${number.format(activeSlice.value)} 次` : '6 项能力合计'}
+            </span>
+          </div>
           <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 260, height: 240 }}>
             <PieChart>
               <Pie
@@ -535,18 +548,14 @@ export function DistributionDonutChart({
                   <Cell key={slice.key} fill={slice.color} cursor={slice.featureId ? 'pointer' : 'default'} />
                 ))}
               </Pie>
-              <Tooltip content={<DonutTooltip />} />
+              <Tooltip
+                content={<DonutTooltip />}
+                offset={16}
+                allowEscapeViewBox={{ x: true, y: true }}
+                wrapperStyle={{ zIndex: 30, pointerEvents: 'none' }}
+              />
             </PieChart>
           </ResponsiveContainer>
-          <div className="analytics-donut-center" aria-live="polite">
-            <span className="analytics-donut-label">{activeSlice ? activeSlice.name : 'AI 总调用'}</span>
-            <strong className="analytics-donut-value">
-              {activeSlice ? `${activeSlice.share.toFixed(1)}%` : number.format(total)}
-            </strong>
-            <span className="analytics-donut-sub">
-              {activeSlice ? `${number.format(activeSlice.value)} 次` : '6 项能力合计'}
-            </span>
-          </div>
         </div>
 
         <div className="analytics-donut-list" role="list" aria-label="调用占比明细">
@@ -702,7 +711,7 @@ export function HealthRadarChart({
               animationDuration={chartAnimationMs}
               isAnimationActive="auto"
             />
-            <Tooltip content={<RadarTooltip />} />
+            <Tooltip content={<RadarTooltip />} wrapperStyle={{ zIndex: 30, pointerEvents: 'none' }} />
           </RadarChart>
         </ResponsiveContainer>
       </div>
@@ -848,7 +857,11 @@ export function PerformanceBarChart({
               axisLine={false}
               tick={{ fill: 'var(--ink)', fontSize: 12 }}
             />
-            <Tooltip content={<PerformanceTooltip />} cursor={{ fill: 'var(--accent-soft)', fillOpacity: 0.45 }} />
+            <Tooltip
+              content={<PerformanceTooltip />}
+              wrapperStyle={{ zIndex: 30, pointerEvents: 'none' }}
+              cursor={{ fill: 'var(--accent-soft)', fillOpacity: 0.45 }}
+            />
             <ReferenceLine
               x={reference.value}
               stroke={reference.color}

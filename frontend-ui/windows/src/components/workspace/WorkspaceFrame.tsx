@@ -4,6 +4,7 @@ import { Columns2, Maximize2, Minimize2, Minus, SlidersHorizontal, X } from 'luc
 import type { LucideIcon } from 'lucide-react'
 import { clampWindowRect, getResizeRect, getWindowScaleLimits, resizeEdges, scaleWindowRect } from './geometry'
 import type { ResizeEdge, SnapQuadrant, WindowMode, WindowRect, WorkBounds } from './geometry'
+import type { GlassTier } from './compositor'
 import './workspace.css'
 import './workspace-resize.css'
 import { useGlassSelection } from '../../hooks/useGlassSelection'
@@ -18,6 +19,8 @@ type FrameProps = {
   title: string
   active: boolean
   visible: boolean
+  occluded?: boolean
+  glassTier?: GlassTier
   flight: 'in' | 'out' | null
   mode: WindowMode
   rect: WindowRect
@@ -28,6 +31,7 @@ type FrameProps = {
   stackOrder?: number
   scrollRef: RefObject<HTMLDivElement | null>
   onFocus: () => void
+  onGestureChange?: (gesturing: boolean) => void
   onGeometry: (next: WindowRect) => void
   onSnap: (quadrant: SnapQuadrant) => void
   onPreview: (quadrant: SnapQuadrant | null) => void
@@ -88,8 +92,8 @@ function WindowButton({ kind, icon: Icon, label, onClick }: { kind: 'close' | 'm
 }
 
 export function WorkspaceFrame({
-  id, title, active, visible, flight, mode, rect, floatingRect, bounds, canFloat, canSnap, stackOrder,
-  scrollRef, onFocus, onGeometry, onSnap, onPreview, onMaximize, onMinimize, onClose, children,
+  id, title, active, visible, occluded = false, glassTier = 'full', flight, mode, rect, floatingRect, bounds, canFloat, canSnap, stackOrder,
+  scrollRef, onFocus, onGestureChange, onGeometry, onSnap, onPreview, onMaximize, onMinimize, onClose, children,
 }: FrameProps) {
   const frameRef = useRef<HTMLElement | null>(null)
   const gesture = useRef<Gesture | null>(null)
@@ -191,6 +195,13 @@ export function WorkspaceFrame({
 
   const previewHandler = useRef(onPreview)
   useEffect(() => { previewHandler.current = onPreview }, [onPreview])
+  const gestureChangeHandler = useRef(onGestureChange)
+  useEffect(() => { gestureChangeHandler.current = onGestureChange }, [onGestureChange])
+  const isGesturing = Boolean(draft || scaleActive)
+  useEffect(() => {
+    gestureChangeHandler.current?.(isGesturing)
+    return () => { if (isGesturing) gestureChangeHandler.current?.(false) }
+  }, [isGesturing])
   useEffect(() => {
     function onBlur() { clearGesture(); finishScale(false) }
     window.addEventListener('blur', onBlur)
@@ -343,10 +354,12 @@ export function WorkspaceFrame({
     <section ref={frameRef} tabIndex={-1} role="region" aria-labelledby={titleId}
       className="workspace-frame" data-workspace-window={id} data-active={active ? '' : undefined}
       data-mode={draft || scaleDraft ? 'floating' : mode} data-gesturing={draft ? '' : undefined}
+      data-occluded={occluded && !isGesturing && !flight ? '' : undefined}
+      data-glass-tier={glassTier}
       data-scaling={scaleActive ? '' : undefined}
       data-resizable={canFloat ? '' : undefined}
       data-unfolding={visible && flight === 'out' ? '' : undefined}
-      aria-hidden={!interactive || undefined} inert={!interactive}
+      aria-hidden={!interactive || occluded || undefined} inert={!interactive || occluded}
       style={{ left: current.x, top: current.y, width: current.width, height: current.height, zIndex: stackOrder ?? (active ? 2 : 1) }}
       onPointerDownCapture={event => { if (!active && interactive && event.target instanceof Node && event.currentTarget.contains(event.target)) onFocus() }}
       onFocusCapture={event => { if (!active && interactive && event.target instanceof Node && event.currentTarget.contains(event.target)) onFocus() }}

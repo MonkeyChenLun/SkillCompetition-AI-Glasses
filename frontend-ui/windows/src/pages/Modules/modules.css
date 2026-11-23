@@ -69,15 +69,18 @@
 }
 
 .analytics-tooltip {
+  position: relative;
+  z-index: 30;
   min-width: 176px;
   padding: 10px 12px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-inner, 12px);
-  background: var(--surface-raised);
-  box-shadow: var(--shadow-panel);
+  background: var(--floating-solid);
+  box-shadow: var(--shadow-floating);
   color: var(--ink);
   font-size: 12px;
   line-height: 1.45;
+  white-space: nowrap;
 }
 .analytics-tooltip-title {
   display: flex;
@@ -102,7 +105,8 @@
 .analytics-tooltip-row {
   display: flex;
   align-items: center;
-  gap: 7px;
+  justify-content: space-between;
+  gap: 12px;
   margin-top: 4px;
   color: var(--muted);
 }
@@ -121,13 +125,20 @@
 }
 .analytics-donut-stage {
   position: relative;
+  isolation: isolate;
+  overflow: visible;
   width: 100%;
   min-width: 0;
   height: 244px;
 }
+.analytics-donut-stage > .recharts-responsive-container {
+  position: relative;
+  z-index: 2;
+}
 .analytics-donut-center {
   position: absolute;
   inset: 0;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;

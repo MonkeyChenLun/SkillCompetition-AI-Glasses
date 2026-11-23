@@ -1,10 +1,12 @@
-import { Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { memo, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { UIEvent } from 'react'
 import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 import { LayoutGrid, ShieldAlert, X } from 'lucide-react'
 import { useAuth } from '../../services/auth'
 import Shell from '../layout/Shell'
 import { WorkspaceDock, WorkspaceFrame } from './WorkspaceFrame'
+import { computeWindowCompositor } from './compositor'
+import type { GlassTier } from './compositor'
 import { canSnapToQuadrant, canSplitWorkspace, clampWindowRect, getQuadrantRect, getWindowRect, initialWindowRect } from './geometry'
 import type { SnapQuadrant, WindowMode, WindowRect, WorkBounds } from './geometry'
 import { playDockGenie } from './dockGenie'
@@ -41,36 +43,60 @@ function amend(state: WorkspaceState, id: string, update: (item: OpenWindow) => 
   return { ...state, windows: state.windows.map(item => item.route.id === id ? update(item) : item) }
 }
 
-function WindowView({ item, active, visible, compact, canSnap, bounds, onFocus, onSearch, onGeometry, onSnap, onPreview, onMaximize, onMinimize, onClose }: {
+const WindowView = memo(function WindowView({
+  item, active, visible, occluded, glassTier, compact, canSnap, bounds,
+  onFocus, onGestureChange, onSearch, onGeometry, onSnap, onPreview, onMaximize, onMinimize, onClose,
+}: {
   item: OpenWindow
   active: boolean
   visible: boolean
+  occluded: boolean
+  glassTier: GlassTier
   compact: boolean
   canSnap: boolean
   bounds: WorkBounds
-  onFocus: () => void
-  onSearch: (params: URLSearchParams) => void
-  onGeometry: (rect: WindowRect) => void
-  onSnap: (quadrant: SnapQuadrant) => void
+  onFocus: (id: string) => void
+  onGestureChange: (id: string, gesturing: boolean) => void
+  onSearch: (id: string, params: URLSearchParams) => void
+  onGeometry: (id: string, rect: WindowRect) => void
+  onSnap: (id: string, quadrant: SnapQuadrant) => void
   onPreview: (quadrant: SnapQuadrant | null) => void
-  onMaximize: () => void
-  onMinimize: () => void
-  onClose: () => void
+  onMaximize: (id: string) => void
+  onMinimize: (id: string) => void
+  onClose: (id: string) => void
 }) {
   const scrollRef = useRef<HTMLDivElement>(null)
+  const id = item.route.id
   const mode = compact ? 'maximized' : !canSnap && item.mode !== 'maximized' ? 'floating' : item.mode
-  return <WorkspaceFrame id={item.route.id} title={item.route.title} active={active} visible={visible}
-    flight={item.flight} mode={mode} stackOrder={item.order} rect={getWindowRect(mode, item.floating, bounds)}
+  const rect = getWindowRect(mode, item.floating, bounds)
+
+  const handleFocus = useCallback(() => onFocus(id), [onFocus, id])
+  const handleGestureChange = useCallback((gesturing: boolean) => onGestureChange(id, gesturing), [onGestureChange, id])
+  const handleSearch = useCallback((params: URLSearchParams) => onSearch(id, params), [onSearch, id])
+  const handleGeometry = useCallback((next: WindowRect) => onGeometry(id, next), [onGeometry, id])
+  const handleSnap = useCallback((quadrant: SnapQuadrant) => onSnap(id, quadrant), [onSnap, id])
+  const handleMaximize = useCallback(() => onMaximize(id), [onMaximize, id])
+  const handleMinimize = useCallback(() => onMinimize(id), [onMinimize, id])
+  const handleClose = useCallback(() => onClose(id), [onClose, id])
+
+  const contextValue = useMemo(
+    () => ({ search: item.route.search, setSearch: handleSearch, scrollRef, visible: visible && !occluded && !item.flight }),
+    [item.route.search, handleSearch, visible, occluded, item.flight],
+  )
+
+  return <WorkspaceFrame id={id} title={item.route.title} active={active} visible={visible}
+    occluded={occluded} glassTier={glassTier}
+    flight={item.flight} mode={mode} stackOrder={item.order} rect={rect}
     floatingRect={item.floating} bounds={bounds} canFloat={!compact} canSnap={canSnap} scrollRef={scrollRef}
-    onFocus={onFocus} onGeometry={onGeometry} onSnap={onSnap} onPreview={onPreview}
-    onMaximize={onMaximize} onMinimize={onMinimize} onClose={onClose}>
-    <WindowContext.Provider value={{ search: item.route.search, setSearch: onSearch, scrollRef, visible: visible && !item.flight }}>
+    onFocus={handleFocus} onGestureChange={handleGestureChange} onGeometry={handleGeometry} onSnap={handleSnap} onPreview={onPreview}
+    onMaximize={handleMaximize} onMinimize={handleMinimize} onClose={handleClose}>
+    <WindowContext.Provider value={contextValue}>
       <Suspense fallback={<p role="status" className="workspace-loading muted">正在加载窗口…</p>}>
         <WindowPageContent route={item.route} />
       </Suspense>
     </WindowContext.Provider>
   </WorkspaceFrame>
-}
+})
 
 const permissionMessage = '当前账号没有访问该页面的权限。'
 
@@ -84,15 +110,23 @@ export default function Workspace() {
   const [bounds, setBounds] = useState<WorkBounds>({ width: 0, height: 0 })
   const [state, setState] = useState<WorkspaceState>({ windows: [], activeId: null })
   const latest = useRef(state)
+  const boundsRef = useRef(bounds)
+  boundsRef.current = bounds
   const nextOrder = useRef(0)
   const [preview, setPreview] = useState<SnapQuadrant | null>(null)
+  const [gesturingId, setGesturingId] = useState<string | null>(null)
   const [notice, setNotice] = useState('')
   const running = useRef(new Map<string, { flight: Flight; cancel: () => void }>())
+  const lastFlightAt = useRef(0)
   const pendingHref = useRef<string | null>(null)
   const lastLocation = useRef<string | null>(null)
   const pendingFocus = useRef<string | null>(null)
   const compact = !canSplitWorkspace(bounds)
   const canSnap = canSnapToQuadrant(bounds)
+  const compactRef = useRef(compact)
+  compactRef.current = compact
+  const canSnapRef = useRef(canSnap)
+  canSnapRef.current = canSnap
   const [dockCollapsed, setDockCollapsed] = useState(false)
   const scrollMemory = useRef(new WeakMap<EventTarget, number>())
 
@@ -108,24 +142,39 @@ export default function Workspace() {
     else if (delta > 6) setDockCollapsed(true)
   }
 
-  const allowed = (route: WindowRoute) => !route.permission || can(route.permission)
-  const windows = state.windows.filter(item => allowed(item.route))
+  const allowed = useCallback((route: WindowRoute) => !route.permission || can(route.permission), [can])
+  const windows = useMemo(() => state.windows.filter(item => allowed(item.route)), [state.windows, allowed])
   const active = windows.find(item => item.route.id === state.activeId && !item.minimized)
   const compactVisibleId = active?.route.id ?? foremost(windows)?.route.id
   const anyVisible = windows.some(item => !item.minimized && (!compact || compactVisibleId === item.route.id))
+  const compositor = useMemo(() => computeWindowCompositor(
+    windows.map((item) => {
+      const mode = compact ? 'maximized' : !canSnap && item.mode !== 'maximized' ? 'floating' : item.mode
+      return {
+        id: item.route.id,
+        order: item.order,
+        mode,
+        rect: getWindowRect(mode, item.floating, bounds),
+        minimized: item.minimized || (compact && compactVisibleId !== item.route.id),
+        flying: item.flight !== null,
+      }
+    }),
+    gesturingId,
+  ), [windows, bounds, compact, canSnap, compactVisibleId, gesturingId])
+
   // Switching windows always brings the dock back.
   useEffect(() => setDockCollapsed(false), [active?.route.id])
 
-  function commit(next: WorkspaceState) {
+  const commit = useCallback((next: WorkspaceState) => {
     latest.current = next
     setState(next)
-  }
+  }, [])
 
-  function writeAddress(href: string, replace: boolean) {
+  const writeAddress = useCallback((href: string, replace: boolean) => {
     if (pendingHref.current === href || (!pendingHref.current && href === currentHref)) return
     pendingHref.current = href
     void navigate(href, { replace, preventScrollReset: true })
-  }
+  }, [currentHref, navigate])
 
   function frameElement(id: string) {
     return stage.current?.querySelector<HTMLElement>(`[data-workspace-window="${CSS.escape(id)}"]`)
@@ -165,7 +214,7 @@ export default function Workspace() {
         ...item, route, order: raised, minimized: false, flight: item.minimized ? 'out' : item.flight,
       })), activeId: route.id }
     }
-    const measured = { width: stage.current?.clientWidth || bounds.width, height: stage.current?.clientHeight || bounds.height }
+    const measured = { width: stage.current?.clientWidth || boundsRef.current.width, height: stage.current?.clientHeight || boundsRef.current.height }
     return { windows: [...base.windows, {
       // Open every module full-size, like a page; floating and split views stay one click away.
       route, mode: 'maximized', restoreMode: 'floating',
@@ -220,12 +269,12 @@ export default function Workspace() {
     }
   }, [currentHref, location.key, movement, can])
 
-  function finishFlight(id: string, flight: Flight) {
+  const finishFlight = useCallback((id: string, flight: Flight) => {
     if (running.current.get(id)?.flight === flight) running.current.delete(id)
     if (!latest.current.windows.some(item => item.route.id === id && item.flight === flight)) return
     commit(amend(latest.current, id, item => ({ ...item, flight: null })))
     if (flight === 'out') focusFrame(id)
-  }
+  }, [commit])
 
   useLayoutEffect(() => {
     const flights = running.current
@@ -237,13 +286,33 @@ export default function Workspace() {
     }
     if (!bounds.width || !bounds.height) return
 
+    const pendingOuts = windows.filter((item) => item.flight === 'out' && !flights.has(item.route.id))
+    let hadActiveOut = false
+    // Under rapid-fire clicking / stress tests, cancel older overlapping 'out' genie ghosts so at most 1 runs.
+    if (pendingOuts.length > 0) {
+      for (const [id, travel] of Array.from(flights)) {
+        if (travel.flight === 'out') {
+          hadActiveOut = true
+          travel.cancel()
+          finishFlight(id, 'out')
+        }
+      }
+    }
+
+    const now = performance.now()
+    const rapidBurst = hadActiveOut || (pendingOuts.length > 0 && now - lastFlightAt.current < 320)
+
     for (const item of windows) {
       const id = item.route.id
       const flight = item.flight
       if (!flight || flights.has(id)) continue
       const frame = frameElement(id)
       const dock = dockElement(id)
-      if (!frame || !dock || (flight === 'out' && compact && state.activeId !== id)) {
+      // Skip heavy 16-slice genie ghosts under rapid-fire clicks or multi-window stress (prevents strobe flicker).
+      const skipHeavyGenie =
+        compositor.visibleCount >= 4 ||
+        (flight === 'out' && (rapidBurst || id !== state.activeId))
+      if (!frame || !dock || skipHeavyGenie || (flight === 'out' && compact && state.activeId !== id)) {
         finishFlight(id, flight)
         continue
       }
@@ -258,9 +327,12 @@ export default function Workspace() {
         frame,
         onFinish: () => { finished = true; finishFlight(id, flight) },
       })
-      if (!finished) flights.set(id, { flight, cancel })
+      if (!finished) {
+        flights.set(id, { flight, cancel })
+        if (flight === 'out') lastFlightAt.current = now
+      }
     }
-  })
+  }, [windows, bounds.width, bounds.height, compact, state.activeId, compositor.visibleCount, finishFlight])
 
   useLayoutEffect(() => {
     function settle() {
@@ -277,9 +349,9 @@ export default function Workspace() {
       for (const motion of flights.values()) motion.cancel()
       flights.clear()
     }
-  }, [])
+  }, [finishFlight])
 
-  function openWindow(to: string) {
+  const openWindow = useCallback((to: string) => {
     const route = parseWindowRoute(to)
     if (!route) return
     if (!allowed(route)) { setNotice(permissionMessage); return }
@@ -290,18 +362,18 @@ export default function Workspace() {
     if (next !== latest.current) commit(next)
     writeAddress(hrefForWindow(destination), false)
     if (!next.windows.find(item => item.route.id === destination.id)?.flight) focusFrame(destination.id)
-  }
+  }, [allowed, commit, writeAddress])
 
-  function focusWindow(id: string, fromDock = false) {
+  const focusWindow = useCallback((id: string, fromDock = false) => {
     const item = latest.current.windows.find(window => window.route.id === id)
     if (!item || !allowed(item.route) || (!fromDock && (item.minimized || item.flight))) return
     const next = promote(latest.current, item.route)
     if (next !== latest.current) commit(next)
     writeAddress(hrefForWindow(item.route), true)
     if (fromDock && !next.windows.find(window => window.route.id === id)?.flight) focusFrame(id)
-  }
+  }, [allowed, commit, writeAddress])
 
-  function hideWindow(id: string, keep: boolean) {
+  const hideWindow = useCallback((id: string, keep: boolean) => {
     const previous = latest.current
     if (!previous.windows.some(item => item.route.id === id)) return
     const changed = keep ? amend(previous, id, item => ({ ...item, minimized: true, flight: 'in' })) :
@@ -317,9 +389,9 @@ export default function Workspace() {
     if (keep) requestAnimationFrame(() => {
       if (latest.current.windows.some(item => item.route.id === id && item.minimized)) dockElement(id)?.focus({ preventScroll: true })
     })
-  }
+  }, [commit, writeAddress])
 
-  function changeSearch(id: string, params: URLSearchParams) {
+  const changeSearch = useCallback((id: string, params: URLSearchParams) => {
     const before = latest.current
     const item = before.windows.find(window => window.route.id === id)
     if (!item || !allowed(item.route)) return
@@ -328,10 +400,10 @@ export default function Workspace() {
     if (hrefForWindow(route) === hrefForWindow(item.route)) return
     commit(amend(before, id, window => ({ ...window, route })))
     if (before.activeId === id) writeAddress(hrefForWindow(route), true)
-  }
+  }, [allowed, commit, writeAddress])
 
-  function snap(id: string, quadrant: SnapQuadrant) {
-    if (!canSnap) return
+  const snap = useCallback((id: string, quadrant: SnapQuadrant) => {
+    if (!canSnapRef.current) return
     const base = latest.current
     commit({
       ...base,
@@ -340,16 +412,45 @@ export default function Workspace() {
         : item.mode === quadrant ? { ...item, mode: 'floating', restoreMode: 'floating' } : item),
     })
     setPreview(null)
-  }
+  }, [commit])
+
+  const handleFocusWindow = useCallback((id: string) => focusWindow(id, false), [focusWindow])
+  const handleGestureChange = useCallback((id: string, activeGesture: boolean) => {
+    setGesturingId((previous) => activeGesture ? id : previous === id ? null : previous)
+  }, [])
+  const handleGeometry = useCallback((id: string, rect: WindowRect) => {
+    commit(amend(latest.current, id, value => ({
+      ...value,
+      mode: 'floating',
+      restoreMode: 'floating',
+      floating: clampWindowRect(rect, boundsRef.current),
+    })))
+  }, [commit])
+  const handleMaximize = useCallback((id: string) => {
+    if (compactRef.current) return
+    const item = latest.current.windows.find((w) => w.route.id === id)
+    if (!item) return
+    if (canSnapRef.current && item.mode === 'maximized' && item.restoreMode !== 'floating') {
+      snap(id, item.restoreMode)
+      return
+    }
+    commit(amend(latest.current, id, value => value.mode === 'maximized'
+      ? { ...value, mode: value.restoreMode }
+      : { ...value, mode: 'maximized', restoreMode: value.mode }))
+  }, [commit, snap])
+  const handleMinimize = useCallback((id: string) => hideWindow(id, true), [hideWindow])
+  const handleClose = useCallback((id: string) => hideWindow(id, false), [hideWindow])
+  const handleDockSelect = useCallback((id: string) => focusWindow(id, true), [focusWindow])
+  const workspaceContextValue = useMemo(() => ({ openWindow }), [openWindow])
 
   const snapBounds = preview && canSnap ? getQuadrantRect(preview, bounds) : null
   const dockHidden = windows.length === 0 || (windows.length === 1 && !windows[0].minimized && !windows[0].flight)
-  return <WorkspaceContext.Provider value={{ openWindow }}>
+  return <WorkspaceContext.Provider value={workspaceContextValue}>
     <Shell activeTo={active?.route.navPath} title={active?.route.title} dock={
       <WorkspaceDock hidden={dockHidden} collapsed={dockCollapsed} items={windows.map(item => ({
         id: item.route.id, title: item.route.title, icon: item.route.icon,
         active: active === item, minimized: item.minimized,
-      }))} onSelect={(id) => focusWindow(id, true)} />
+      }))} onSelect={handleDockSelect} />
     }>
       <main className="workspace-stage" id="main-content" ref={stage} tabIndex={-1} aria-label="窗口工作区" onScrollCapture={trackScroll}>
         {!anyVisible && <div className="workspace-stage-message">
@@ -359,21 +460,18 @@ export default function Workspace() {
           {!windows.length && <WorkspaceLink to="/" className="button">打开实时监控</WorkspaceLink>}
         </div>}
         {snapBounds && <div className="workspace-snap-preview" data-quadrant={preview ?? undefined} style={{ left: snapBounds.x, top: snapBounds.y, width: snapBounds.width, height: snapBounds.height }} aria-hidden="true" />}
-        {windows.map(item => <WindowView key={item.route.id} item={item} active={active === item} visible={!item.minimized && (!compact || compactVisibleId === item.route.id)}
-          compact={compact} canSnap={canSnap} bounds={bounds} onFocus={() => focusWindow(item.route.id)} onSearch={(params) => changeSearch(item.route.id, params)}
-          onGeometry={(rect) => commit(amend(latest.current, item.route.id, value => ({ ...value, mode: 'floating', restoreMode: 'floating', floating: clampWindowRect(rect, bounds) })))}
-          onSnap={(quadrant) => snap(item.route.id, quadrant)} onPreview={setPreview}
-          onMaximize={() => {
-            if (compact) return
-            if (canSnap && item.mode === 'maximized' && item.restoreMode !== 'floating') {
-              snap(item.route.id, item.restoreMode)
-              return
-            }
-            commit(amend(latest.current, item.route.id, value => value.mode === 'maximized'
-              ? { ...value, mode: value.restoreMode }
-              : { ...value, mode: 'maximized', restoreMode: value.mode }))
-          }}
-          onMinimize={() => hideWindow(item.route.id, true)} onClose={() => hideWindow(item.route.id, false)} />)}
+        {windows.map(item => {
+          const id = item.route.id
+          const visible = !item.minimized && (!compact || compactVisibleId === id)
+          const occluded = compositor.occludedIds.has(id)
+          const glassTier = compositor.glassTierById.get(id) ?? 'lite'
+          return <WindowView key={id} item={item} active={active === item} visible={visible}
+            occluded={occluded} glassTier={glassTier}
+            compact={compact} canSnap={canSnap} bounds={bounds}
+            onFocus={handleFocusWindow} onGestureChange={handleGestureChange} onSearch={changeSearch}
+            onGeometry={handleGeometry} onSnap={snap} onPreview={setPreview}
+            onMaximize={handleMaximize} onMinimize={handleMinimize} onClose={handleClose} />
+        })}
         {notice && <div className="shell-access-notice workspace-notice" role="status">
           <ShieldAlert size={16} aria-hidden="true" />{notice}
           <button className="icon-button" type="button" aria-label="关闭提示" onClick={() => setNotice('')}><X size={14} aria-hidden="true" /></button>

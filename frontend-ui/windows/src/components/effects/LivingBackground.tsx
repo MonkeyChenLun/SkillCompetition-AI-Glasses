@@ -1020,6 +1020,7 @@ export default function LivingBackground() {
 
     function loop(now: number) {
       frame = requestAnimationFrame(loop)
+      if (document.hidden) return
       const interval = motion.matches ? 250 : 1000 / 60
       if (now - last < interval) return
       const dt = Math.min(0.06, (now - (last || now)) / 1000)
