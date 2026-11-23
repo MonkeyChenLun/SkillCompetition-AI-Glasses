@@ -154,7 +154,7 @@ function buildParticleSprites(theme: 'light' | 'dark'): HTMLCanvasElement[] {
         ]
 
   return specs.map(({ pin, core, mid, outer }) => {
-    const size = 32
+    const size = 48
     const c = document.createElement('canvas')
     c.width = size
     c.height = size
@@ -190,6 +190,8 @@ uniform vec2 u_texel;
 uniform float u_aspect;
 uniform float u_time;
 uniform vec2 u_pointer;
+uniform float u_lensRadius;
+uniform float u_lensPower;
 uniform vec3 u_base0;
 uniform vec3 u_base1;
 uniform vec3 u_base2;
@@ -233,12 +235,6 @@ vec3 evalField(vec2 uv) {
   float c2 = cos(p.y * 1.50 - u_time * 0.38 + sin(p.x * 1.25 + u_time * 0.28));
   float net = pow(max(0.0, 1.0 - abs(c1 + c2) * 0.54), 3.4);
   col = mix(col, u_causticTint, net * (u_isDark > 0.5 ? 0.045 : 0.052));
-
-  float pd = length((uv - u_pointer) * metric) / (0.20 * longEdge);
-  if (pd < 1.0) {
-    float glow = (1.0 - pd) * (1.0 - pd) * u_cursor.w;
-    col = mix(col, u_cursor.rgb, glow);
-  }
   return col;
 }
 
@@ -253,9 +249,24 @@ void main() {
   vec3 normal = normalize(vec3(n.x * 2.4, n.y * 2.4, 1.0));
   vec2 shift = normal.xy * 0.028;
 
-  float r = evalField(v_uv + shift * 0.88).r;
-  float g = evalField(v_uv + shift * 1.00).g;
-  float b = evalField(v_uv + shift * 1.12).b;
+  // Convex optical magnifying glass refraction synced to the particle loupe.
+  vec2 metric = vec2(u_aspect, 1.0);
+  vec2 lensVec = v_uv - u_pointer;
+  float lensU = length(lensVec * metric) / max(0.001, u_lensRadius);
+  vec2 lensShift = vec2(0.0);
+  float lensRim = 0.0;
+  float lensDomeGlow = 0.0;
+  if (u_lensPower > 0.001 && lensU < 1.0) {
+    float oneMinusU2 = 1.0 - lensU * lensU;
+    float dome = oneMinusU2 * oneMinusU2;
+    lensShift = -lensVec * (0.24 * u_lensPower * dome);
+    lensRim = smoothstep(0.74, 0.96, lensU) * (1.0 - smoothstep(0.96, 1.0, lensU)) * u_lensPower;
+    lensDomeGlow = (1.0 - lensU * lensU) * u_lensPower * u_cursor.w * 0.45;
+  }
+
+  float r = evalField(v_uv + shift * 0.88 + lensShift * 0.93).r;
+  float g = evalField(v_uv + shift * 1.00 + lensShift * 1.00).g;
+  float b = evalField(v_uv + shift * 1.12 + lensShift * 1.07).b;
   vec3 col = vec3(r, g, b);
 
   col += h * (u_isDark > 0.5 ? vec3(0.018, 0.04, 0.07) : vec3(-0.02, 0.005, 0.03));
@@ -270,6 +281,11 @@ void main() {
   float fresnel = pow(1.0 - normal.z, 2.0);
   float specMix = clamp(spec1 * 0.42 + spec2 * 0.14 + fresnel * 0.12, 0.0, 0.34);
   col = mix(col, u_specColor, specMix);
+
+  if (lensRim > 0.001 || lensDomeGlow > 0.001) {
+    col = mix(col, u_cursor.rgb, clamp(lensDomeGlow, 0.0, 0.12));
+    col = mix(col, u_specColor, clamp(lensRim * (u_isDark > 0.5 ? 0.20 : 0.28), 0.0, 0.32));
+  }
 
   gl_FragColor = vec4(col, 1.0);
 }
@@ -414,7 +430,7 @@ export default function LivingBackground() {
     const palette = clonePalette(palettes[themeOf()])
 
     const baseGL = createGLRenderer(baseCanvas, BASE_FRAG_SRC, false, [
-      'u_wave', 'u_texel', 'u_aspect', 'u_time', 'u_pointer',
+      'u_wave', 'u_texel', 'u_aspect', 'u_time', 'u_pointer', 'u_lensRadius', 'u_lensPower',
       'u_base0', 'u_base1', 'u_base2', 'u_blobs[0]', 'u_blobColors[0]',
       'u_cursor', 'u_causticTint', 'u_focusColor', 'u_specColor', 'u_isDark',
     ])
@@ -441,6 +457,12 @@ export default function LivingBackground() {
     let particles: LatticeParticle[] = []
     let latticeSize = ''
 
+    const LENS_RADIUS = 114
+    const LENS_RADIUS_2 = LENS_RADIUS * LENS_RADIUS
+    let lensPower = 0
+    let lensClickBoost = 0
+    let pointerOverContent = false
+
     let frame = 0
     let last = 0
     let clock = 0
@@ -455,6 +477,7 @@ export default function LivingBackground() {
       prevY: innerHeight * 0.35,
       lastT: 0,
       seen: false,
+      inside: false,
     }
     let lastStirWake = 0
 
@@ -809,9 +832,15 @@ export default function LivingBackground() {
         blob.ox = clamp(blob.ox + blob.vx * dt, -limit, limit)
         blob.oy = clamp(blob.oy + blob.vy * dt, -limit, limit)
       }
-      const follow = still ? 1 : 1 - Math.exp(-dt * 5)
+      const follow = still ? 1 : 1 - Math.exp(-dt * 18)
       pointer.x = mix(pointer.x, pointer.tx, follow)
       pointer.y = mix(pointer.y, pointer.ty, follow)
+      const lensTarget = pointer.inside ? (pointerOverContent ? 0.82 : 1.0) : 0
+      const lensEase = still ? 1 : 1 - Math.exp(-dt * 11)
+      lensPower = mix(lensPower, lensTarget, lensEase)
+      if (lensPower < 0.002 && lensTarget === 0) lensPower = 0
+      lensClickBoost *= still ? 0 : Math.exp(-dt * 6.5)
+      if (lensClickBoost < 0.002) lensClickBoost = 0
       approach(palette, palettes[themeOf()], 1 - Math.exp(-dt * 5))
     }
 
@@ -826,26 +855,118 @@ export default function LivingBackground() {
       const currentTheme = themeOf()
       const themeSprites = sprites[currentTheme]
       const dpr = particleDpr
-      // Stiff-stemmed lily-pad lattice: calm, rock-steady anchor with restrained glint on brush.
+      // Stiff-stemmed optical lattice with interactive convex magnifying-glass loupe at the cursor.
       const restAlpha = currentTheme === 'dark' ? 0.72 : 0.70
       const restRadius = 3.5 * dpr
+      const effectiveLens = lensPower * (1 + lensClickBoost)
+      const hasLens = effectiveLens > 0.005
+      const lx0 = pointer.x
+      const ly0 = pointer.y
 
       for (let i = 0, len = particles.length; i < len; i++) {
         const p = particles[i]
         const waveX = Math.sin(clock * 0.45 + p.phase) * 0.16
         const waveY = Math.cos(clock * 0.40 + p.phase * 1.1) * 0.16
-        const x = (p.hx + p.ox + waveX) * dpr
-        const y = (p.hy + p.oy + waveY) * dpr
+        let drawX = p.hx + p.ox + waveX
+        let drawY = p.hy + p.oy + waveY
+        let lensMag = 0
+        let lensFocus = 0
 
+        if (hasLens) {
+          const dx = drawX - lx0
+          const dy = drawY - ly0
+          if (dx > -LENS_RADIUS && dx < LENS_RADIUS && dy > -LENS_RADIUS && dy < LENS_RADIUS) {
+            const d2 = dx * dx + dy * dy
+            if (d2 < LENS_RADIUS_2) {
+              const oneMinusU2 = 1 - d2 / LENS_RADIUS_2
+              const dome = oneMinusU2 * oneMinusU2
+              // True convex magnification: 0 shift at lens center (zero blank hole), smooth radial expansion inside.
+              const magShift = 0.28 * effectiveLens * dome
+              drawX += dx * magShift
+              drawY += dy * magShift
+              lensMag = Math.pow(oneMinusU2, 1.35) * effectiveLens
+              lensFocus = Math.pow(oneMinusU2, 1.1) * effectiveLens
+            }
+          }
+        }
+
+        const x = drawX * dpr
+        const y = drawY * dpr
         const flare = p.flare
         const breath = 0.93 + 0.07 * Math.sin(clock * 1.1 + p.phase)
-        const alpha = clamp(restAlpha * breath + flare * 0.28, 0.16, 0.94)
-        const radius = restRadius + flare * 0.9 * dpr
-        const sprite = flare > 0.30 ? themeSprites[2] : themeSprites[p.variant]
+        const alpha = clamp(restAlpha * breath + lensFocus * 0.26 + flare * 0.20, 0.16, 0.98)
+        const radius = restRadius * (1 + 0.95 * lensMag) + flare * 0.45 * dpr
+        const sprite = lensFocus > 0.42 || flare > 0.32 ? themeSprites[2] : themeSprites[p.variant]
 
         ctx.globalAlpha = alpha
         ctx.drawImage(sprite, x - radius, y - radius, radius * 2, radius * 2)
       }
+
+      // Frameless optical glass loupe dome & specular rim over the magnified dots.
+      if (lensPower > 0.015) {
+        const cx = lx0 * dpr
+        const cy = ly0 * dpr
+        const r = LENS_RADIUS * (1 + lensClickBoost * 0.06) * dpr
+        const isDark = currentTheme === 'dark'
+
+        ctx.save()
+        ctx.globalAlpha = lensPower
+
+        // 1. Subtle spherical Fresnel edge sheen (clear center so magnified dots stay razor-sharp).
+        const domeGrad = ctx.createRadialGradient(cx, cy, r * 0.08, cx, cy, r)
+        if (isDark) {
+          domeGrad.addColorStop(0, 'rgba(180, 232, 255, 0)')
+          domeGrad.addColorStop(0.68, 'rgba(130, 206, 255, 0.025)')
+          domeGrad.addColorStop(0.90, 'rgba(148, 224, 255, 0.11)')
+          domeGrad.addColorStop(0.985, 'rgba(214, 244, 255, 0.22)')
+          domeGrad.addColorStop(1, 'rgba(148, 224, 255, 0)')
+        } else {
+          domeGrad.addColorStop(0, 'rgba(255, 255, 255, 0)')
+          domeGrad.addColorStop(0.68, 'rgba(255, 255, 255, 0.04)')
+          domeGrad.addColorStop(0.90, 'rgba(255, 255, 255, 0.26)')
+          domeGrad.addColorStop(0.985, 'rgba(92, 162, 246, 0.20)')
+          domeGrad.addColorStop(1, 'rgba(92, 162, 246, 0)')
+        }
+        ctx.fillStyle = domeGrad
+        ctx.beginPath()
+        ctx.arc(cx, cy, r, 0, Math.PI * 2)
+        ctx.fill()
+
+        // 2. Curved top-left glass specular reflection inside the convex lens dome.
+        ctx.beginPath()
+        ctx.arc(cx, cy, r - 0.6 * dpr, 0, Math.PI * 2)
+        ctx.clip()
+        const specX = cx - r * 0.34
+        const specY = cy - r * 0.36
+        const specGrad = ctx.createRadialGradient(specX, specY, 0, specX, specY, r * 0.68)
+        specGrad.addColorStop(0, isDark ? 'rgba(225, 246, 255, 0.14)' : 'rgba(255, 255, 255, 0.34)')
+        specGrad.addColorStop(0.45, isDark ? 'rgba(155, 222, 255, 0.04)' : 'rgba(255, 255, 255, 0.09)')
+        specGrad.addColorStop(1, 'rgba(255, 255, 255, 0)')
+        ctx.fillStyle = specGrad
+        ctx.fillRect(cx - r, cy - r, r * 2, r * 2)
+        ctx.restore()
+
+        // 3. Crisp hairline optical glass bezel rim.
+        ctx.save()
+        ctx.globalAlpha = lensPower
+        const rimGrad = ctx.createLinearGradient(cx - r, cy - r, cx + r, cy + r)
+        if (isDark) {
+          rimGrad.addColorStop(0, 'rgba(232, 248, 255, 0.42)')
+          rimGrad.addColorStop(0.45, 'rgba(116, 206, 255, 0.16)')
+          rimGrad.addColorStop(1, 'rgba(166, 228, 255, 0.30)')
+        } else {
+          rimGrad.addColorStop(0, 'rgba(255, 255, 255, 0.72)')
+          rimGrad.addColorStop(0.45, 'rgba(98, 164, 242, 0.22)')
+          rimGrad.addColorStop(1, 'rgba(54, 124, 228, 0.30)')
+        }
+        ctx.strokeStyle = rimGrad
+        ctx.lineWidth = 1.25 * dpr
+        ctx.beginPath()
+        ctx.arc(cx, cy, r - 0.8 * dpr, 0, Math.PI * 2)
+        ctx.stroke()
+        ctx.restore()
+      }
+
       ctx.globalAlpha = 1
     }
 
@@ -905,6 +1026,8 @@ export default function LivingBackground() {
           pointer.seen ? pointer.x / Math.max(1, innerWidth) : -2,
           pointer.seen ? pointer.y / Math.max(1, innerHeight) : -2,
         )
+        gl.uniform1f(uniforms.u_lensRadius, (LENS_RADIUS * (1 + lensClickBoost * 0.06)) / Math.max(1, innerHeight))
+        gl.uniform1f(uniforms.u_lensPower, root.dataset.glass === 'off' ? 0 : lensPower * (1 + lensClickBoost))
         gl.uniform3f(uniforms.u_base0, palette.base[0][0] / 255, palette.base[0][1] / 255, palette.base[0][2] / 255)
         gl.uniform3f(uniforms.u_base1, palette.base[1][0] / 255, palette.base[1][1] / 255, palette.base[1][2] / 255)
         gl.uniform3f(uniforms.u_base2, palette.base[2][0] / 255, palette.base[2][1] / 255, palette.base[2][2] / 255)
@@ -976,10 +1099,13 @@ export default function LivingBackground() {
 
     function onPointerMove(event: PointerEvent) {
       const now = event.timeStamp || performance.now()
+      const wasInside = pointer.inside
       pointer.tx = event.clientX
       pointer.ty = event.clientY
-      const scale = isOverConsoleContent(event.target) ? 0.48 : 1.0
-      if (!pointer.seen) {
+      pointer.inside = true
+      pointerOverContent = isOverConsoleContent(event.target)
+      const scale = pointerOverContent ? 0.48 : 1.0
+      if (!pointer.seen || (!wasInside && lensPower < 0.05)) {
         pointer.seen = true
         pointer.x = event.clientX
         pointer.y = event.clientY
@@ -1001,12 +1127,26 @@ export default function LivingBackground() {
       })
     }
 
+    function onPointerLeave() {
+      pointer.inside = false
+    }
+
     function onPointerDown(event: PointerEvent) {
       if (motion.matches || !event.isPrimary) return
+      pointer.tx = event.clientX
+      pointer.ty = event.clientY
+      pointer.inside = true
+      pointerOverContent = isOverConsoleContent(event.target)
+      if (!pointer.seen) {
+        pointer.seen = true
+        pointer.x = event.clientX
+        pointer.y = event.clientY
+      }
       pointer.prevX = event.clientX
       pointer.prevY = event.clientY
       pointer.lastT = event.timeStamp || performance.now()
-      const scale = isOverConsoleContent(event.target) ? 0.35 : 0.56
+      lensClickBoost = 0.22
+      const scale = pointerOverContent ? 0.35 : 0.56
       dropWater(event.clientX, event.clientY, 10, scale)
       // Soft luminous pulse on tap — zero outward scatter so clicking never opens a blank hole.
       const reach = 36
@@ -1064,6 +1204,8 @@ export default function LivingBackground() {
     window.addEventListener('resize', resize)
     window.addEventListener('pointermove', onPointerMove, { passive: true })
     window.addEventListener('pointerdown', onPointerDown, { passive: true })
+    document.documentElement.addEventListener('pointerleave', onPointerLeave, { passive: true })
+    window.addEventListener('blur', onPointerLeave)
     window.addEventListener(STIR_EVENT, onStir)
     return () => {
       cancelAnimationFrame(frame)
@@ -1071,6 +1213,8 @@ export default function LivingBackground() {
       window.removeEventListener('resize', resize)
       window.removeEventListener('pointermove', onPointerMove)
       window.removeEventListener('pointerdown', onPointerDown)
+      document.documentElement.removeEventListener('pointerleave', onPointerLeave)
+      window.removeEventListener('blur', onPointerLeave)
       window.removeEventListener(STIR_EVENT, onStir)
       delete root.dataset.livingBg
     }
