@@ -249,19 +249,17 @@ void main() {
   vec3 normal = normalize(vec3(n.x * 2.4, n.y * 2.4, 1.0));
   vec2 shift = normal.xy * 0.028;
 
-  // Convex optical magnifying glass refraction synced to the particle loupe.
+  // Borderless convex optical magnification synced to the particle field.
   vec2 metric = vec2(u_aspect, 1.0);
   vec2 lensVec = v_uv - u_pointer;
   float lensU = length(lensVec * metric) / max(0.001, u_lensRadius);
   vec2 lensShift = vec2(0.0);
-  float lensRim = 0.0;
   float lensDomeGlow = 0.0;
   if (u_lensPower > 0.001 && lensU < 1.0) {
     float oneMinusU2 = 1.0 - lensU * lensU;
     float dome = oneMinusU2 * oneMinusU2;
     lensShift = -lensVec * (0.24 * u_lensPower * dome);
-    lensRim = smoothstep(0.74, 0.96, lensU) * (1.0 - smoothstep(0.96, 1.0, lensU)) * u_lensPower;
-    lensDomeGlow = (1.0 - lensU * lensU) * u_lensPower * u_cursor.w * 0.45;
+    lensDomeGlow = dome * u_lensPower * u_cursor.w * 0.40;
   }
 
   float r = evalField(v_uv + shift * 0.88 + lensShift * 0.93).r;
@@ -282,9 +280,8 @@ void main() {
   float specMix = clamp(spec1 * 0.42 + spec2 * 0.14 + fresnel * 0.12, 0.0, 0.34);
   col = mix(col, u_specColor, specMix);
 
-  if (lensRim > 0.001 || lensDomeGlow > 0.001) {
-    col = mix(col, u_cursor.rgb, clamp(lensDomeGlow, 0.0, 0.12));
-    col = mix(col, u_specColor, clamp(lensRim * (u_isDark > 0.5 ? 0.20 : 0.28), 0.0, 0.32));
+  if (lensDomeGlow > 0.001) {
+    col = mix(col, u_cursor.rgb, clamp(lensDomeGlow, 0.0, 0.10));
   }
 
   gl_FragColor = vec4(col, 1.0);
@@ -901,72 +898,6 @@ export default function LivingBackground() {
         ctx.globalAlpha = alpha
         ctx.drawImage(sprite, x - radius, y - radius, radius * 2, radius * 2)
       }
-
-      // Frameless optical glass loupe dome & specular rim over the magnified dots.
-      if (lensPower > 0.015) {
-        const cx = lx0 * dpr
-        const cy = ly0 * dpr
-        const r = LENS_RADIUS * (1 + lensClickBoost * 0.06) * dpr
-        const isDark = currentTheme === 'dark'
-
-        ctx.save()
-        ctx.globalAlpha = lensPower
-
-        // 1. Subtle spherical Fresnel edge sheen (clear center so magnified dots stay razor-sharp).
-        const domeGrad = ctx.createRadialGradient(cx, cy, r * 0.08, cx, cy, r)
-        if (isDark) {
-          domeGrad.addColorStop(0, 'rgba(180, 232, 255, 0)')
-          domeGrad.addColorStop(0.68, 'rgba(130, 206, 255, 0.025)')
-          domeGrad.addColorStop(0.90, 'rgba(148, 224, 255, 0.11)')
-          domeGrad.addColorStop(0.985, 'rgba(214, 244, 255, 0.22)')
-          domeGrad.addColorStop(1, 'rgba(148, 224, 255, 0)')
-        } else {
-          domeGrad.addColorStop(0, 'rgba(255, 255, 255, 0)')
-          domeGrad.addColorStop(0.68, 'rgba(255, 255, 255, 0.04)')
-          domeGrad.addColorStop(0.90, 'rgba(255, 255, 255, 0.26)')
-          domeGrad.addColorStop(0.985, 'rgba(92, 162, 246, 0.20)')
-          domeGrad.addColorStop(1, 'rgba(92, 162, 246, 0)')
-        }
-        ctx.fillStyle = domeGrad
-        ctx.beginPath()
-        ctx.arc(cx, cy, r, 0, Math.PI * 2)
-        ctx.fill()
-
-        // 2. Curved top-left glass specular reflection inside the convex lens dome.
-        ctx.beginPath()
-        ctx.arc(cx, cy, r - 0.6 * dpr, 0, Math.PI * 2)
-        ctx.clip()
-        const specX = cx - r * 0.34
-        const specY = cy - r * 0.36
-        const specGrad = ctx.createRadialGradient(specX, specY, 0, specX, specY, r * 0.68)
-        specGrad.addColorStop(0, isDark ? 'rgba(225, 246, 255, 0.14)' : 'rgba(255, 255, 255, 0.34)')
-        specGrad.addColorStop(0.45, isDark ? 'rgba(155, 222, 255, 0.04)' : 'rgba(255, 255, 255, 0.09)')
-        specGrad.addColorStop(1, 'rgba(255, 255, 255, 0)')
-        ctx.fillStyle = specGrad
-        ctx.fillRect(cx - r, cy - r, r * 2, r * 2)
-        ctx.restore()
-
-        // 3. Crisp hairline optical glass bezel rim.
-        ctx.save()
-        ctx.globalAlpha = lensPower
-        const rimGrad = ctx.createLinearGradient(cx - r, cy - r, cx + r, cy + r)
-        if (isDark) {
-          rimGrad.addColorStop(0, 'rgba(232, 248, 255, 0.42)')
-          rimGrad.addColorStop(0.45, 'rgba(116, 206, 255, 0.16)')
-          rimGrad.addColorStop(1, 'rgba(166, 228, 255, 0.30)')
-        } else {
-          rimGrad.addColorStop(0, 'rgba(255, 255, 255, 0.72)')
-          rimGrad.addColorStop(0.45, 'rgba(98, 164, 242, 0.22)')
-          rimGrad.addColorStop(1, 'rgba(54, 124, 228, 0.30)')
-        }
-        ctx.strokeStyle = rimGrad
-        ctx.lineWidth = 1.25 * dpr
-        ctx.beginPath()
-        ctx.arc(cx, cy, r - 0.8 * dpr, 0, Math.PI * 2)
-        ctx.stroke()
-        ctx.restore()
-      }
-
       ctx.globalAlpha = 1
     }
 
