@@ -589,8 +589,19 @@ export default function LivingBackground() {
       waveEnergy = 1
     }
 
-    /** Carve a crisp trajectory channel through the regular particle lattice along (x0, y0) -> (x1, y1). */
-    function partParticlesAlongSegment(x0: number, y0: number, x1: number, y1: number, dtMs: number) {
+    // Stiff underwater lily-pad stems: firmly rooted, tiny radial yield (max 2.4px), zero wobble.
+    const STEM_MAX_OFFSET = 2.4
+    const clampStemOffset = (p: LatticeParticle) => {
+      const r2 = p.ox * p.ox + p.oy * p.oy
+      if (r2 > STEM_MAX_OFFSET * STEM_MAX_OFFSET) {
+        const s = STEM_MAX_OFFSET / Math.sqrt(r2)
+        p.ox *= s
+        p.oy *= s
+      }
+    }
+
+    /** Gently brush stiff-stemmed lattice particles along (x0, y0) -> (x1, y1) with minimal deflection. */
+    function partParticlesAlongSegment(x0: number, y0: number, x1: number, y1: number, dtMs: number, scale = 1) {
       const sdx = x1 - x0
       const sdy = y1 - y0
       const segLen2 = sdx * sdx + sdy * sdy
@@ -599,10 +610,10 @@ export default function LivingBackground() {
       const speed = clamp(segLen / Math.max(4, dtMs), 0, 3.2) // px/ms
       const ux = sdx / segLen
       const uy = sdy / segLen
-      // Honey-surface micro-bubbles: ultra-compact local displacement (max +-7px) with sticky viscous cling.
-      const reach = clamp(28 + speed * 8, 28, 44)
+      const reach = clamp(22 + speed * 5, 22, 34)
       const reach2 = reach * reach
-      const impulseBase = 55 + speed * 58
+      const impulseBase = (16 + speed * 18) * scale
+      const frameScale = Math.min(1, dtMs / 16) * scale
 
       const boxMinX = Math.min(x0, x1) - reach
       const boxMaxX = Math.max(x0, x1) + reach
@@ -633,22 +644,26 @@ export default function LivingBackground() {
         const lx = -uy * side
         const ly = ux * side
 
-        // Sticky honey drag: bubbles cling and shift gently along + slightly aside from the finger.
+        // Stiff-stem resistance: harder to bend the further the pad tilts from its root.
+        const curDist = Math.hypot(p.ox, p.oy)
+        const stemYield = clamp(1 - curDist / STEM_MAX_OFFSET, 0.08, 1)
+
         const dirX = rx * 0.35 + lx * 0.58 + ux * 0.38
         const dirY = ry * 0.35 + ly * 0.58 + uy * 0.38
 
-        const directShift = falloff * (1.2 + speed * 0.7)
-        p.ox = clamp(p.ox + dirX * directShift, -7.5, 7.5)
-        p.oy = clamp(p.oy + dirY * directShift, -7.5, 7.5)
+        const directShift = falloff * (0.12 + speed * 0.08) * frameScale * stemYield
+        p.ox += dirX * directShift
+        p.oy += dirY * directShift
+        clampStemOffset(p)
 
-        const push = impulseBase * falloff
+        const push = impulseBase * falloff * stemYield
         p.vx += dirX * push
         p.vy += dirY * push
-        p.flare = Math.min(1, p.flare + falloff * (0.52 + speed * 0.24))
+        p.flare = Math.min(1, p.flare + falloff * (0.32 + speed * 0.14) * scale)
       }
     }
 
-    /** Trace a fine fingertip wake and carve the particle lattice along the cursor segment. */
+    /** Trace a fine fingertip wake and gently brush the stiff-stemmed particle lattice. */
     function traceFingerSegment(x0: number, y0: number, x1: number, y1: number, dtMs: number, scale: number) {
       const dx = x1 - x0
       const dy = y1 - y0
@@ -666,7 +681,7 @@ export default function LivingBackground() {
         const t = s / steps
         stampWake(x0 + dx * t, y0 + dy * t, radiusPx, perStepStrength, ux, uy)
       }
-      partParticlesAlongSegment(x0, y0, x1, y1, dtMs)
+      partParticlesAlongSegment(x0, y0, x1, y1, dtMs, scale)
     }
 
     function stepWaveSubstep() {
@@ -714,23 +729,24 @@ export default function LivingBackground() {
     }
 
     function stepParticles(dt: number) {
-      // Honey-bubble viscosity: ultra-heavy drag (zero scatter, syrupy +-7.5px micro-shift).
-      const drag = Math.exp(-15.5 * dt)
-      const springK = 10.5
-      const hoverR = 26
+      // Stiff underwater stem + viscous honey damping: firmly anchored (zeta ~ 1.31, zero wobble).
+      const pdt = Math.min(dt, 0.032)
+      const drag = Math.exp(-20 * pdt)
+      const springK = 58
+      const hoverR = 22
       const hoverR2 = hoverR * hoverR
-      const hasWaves = waveEnergy > 0.006
+      const hasWaves = waveEnergy > 0.014
       const ptx = pointer.tx
       const pty = pointer.ty
       const pSeen = pointer.seen
-      const flareDecay = Math.exp(-2.2 * dt)
+      const flareDecay = Math.exp(-2.8 * pdt)
 
       for (let i = 0, len = particles.length; i < len; i++) {
         const p = particles[i]
         const px = p.hx + p.ox
         const py = p.hy + p.oy
 
-        // 1. Delicate surface-tension nudge right next to the cursor tip.
+        // 1. Minimal surface-tension brush right beneath the cursor tip.
         if (pSeen) {
           const dx = px - ptx
           const dy = py - pty
@@ -739,33 +755,34 @@ export default function LivingBackground() {
             if (d2 < hoverR2 && d2 > 0.01) {
               const d = Math.sqrt(d2)
               const f = (1 - d / hoverR) * (1 - d / hoverR)
-              p.vx += (dx / d) * f * 85 * dt
-              p.vy += (dy / d) * f * 85 * dt
-              p.flare = Math.min(1, p.flare + f * 1.2 * dt)
+              p.vx += (dx / d) * f * 22 * pdt
+              p.vy += (dy / d) * f * 22 * pdt
+              p.flare = Math.min(1, p.flare + f * 0.45 * pdt)
             }
           }
         }
 
-        // 2. Subtle wave-slope swell like micro-bubbles clinging to thick honey.
+        // 2. Stiff stems resist passing ripples — only strong wave crests cause a tiny micro-tremor.
         if (hasWaves) {
           const gx = clamp((px / cellPx) | 0, 1, gw - 2)
           const gy = clamp((py / cellPx) | 0, 1, gh - 2)
           const idx = gy * gw + gx
           const nx = (h0[idx + 1] - h0[idx - 1]) * 0.5
           const ny = (h0[idx + gw] - h0[idx - gw]) * 0.5
-          if (nx > 0.004 || nx < -0.004 || ny > 0.004 || ny < -0.004) {
-            p.vx += nx * 65 * dt
-            p.vy += ny * 65 * dt
+          if (nx > 0.015 || nx < -0.015 || ny > 0.015 || ny < -0.015) {
+            p.vx += nx * 12 * pdt
+            p.vy += ny * 12 * pdt
             const crest = (nx < 0 ? -nx : nx) + (ny < 0 ? -ny : ny)
-            if (crest > 0.03) p.flare = Math.min(1, p.flare + crest * 0.35)
+            if (crest > 0.06) p.flare = Math.min(1, p.flare + crest * 0.10)
           }
         }
 
-        // 3. Slow, syrupy over-damped creep back to (hx, hy) capped at +-7.5px.
-        p.vx = (p.vx - springK * p.ox * dt) * drag
-        p.vy = (p.vy - springK * p.oy * dt) * drag
-        p.ox = clamp(p.ox + p.vx * dt, -7.5, 7.5)
-        p.oy = clamp(p.oy + p.vy * dt, -7.5, 7.5)
+        // 3. Firm overdamped stem restoration back to (hx, hy), radially capped at 2.4px.
+        p.vx = (p.vx - springK * p.ox * pdt) * drag
+        p.vy = (p.vy - springK * p.oy * pdt) * drag
+        p.ox += p.vx * pdt
+        p.oy += p.vy * pdt
+        clampStemOffset(p)
         p.flare *= flareDecay
       }
     }
@@ -819,37 +836,25 @@ export default function LivingBackground() {
       const currentTheme = themeOf()
       const themeSprites = sprites[currentTheme]
       const dpr = particleDpr
-      // Delicate honey-foam micro-bubbles: crisp, subtle glow, minimal swell.
+      // Stiff-stemmed lily-pad lattice: calm, rock-steady anchor with restrained glint on brush.
       const restAlpha = currentTheme === 'dark' ? 0.72 : 0.70
       const restRadius = 3.5 * dpr
 
       for (let i = 0, len = particles.length; i < len; i++) {
         const p = particles[i]
-        const waveX = Math.sin(clock * 0.55 + p.phase) * 0.65
-        const waveY = Math.cos(clock * 0.48 + p.phase * 1.1) * 0.65
+        const waveX = Math.sin(clock * 0.45 + p.phase) * 0.16
+        const waveY = Math.cos(clock * 0.40 + p.phase * 1.1) * 0.16
         const x = (p.hx + p.ox + waveX) * dpr
         const y = (p.hy + p.oy + waveY) * dpr
 
         const flare = p.flare
-        const breath = 0.85 + 0.15 * Math.sin(clock * 1.3 + p.phase)
-        const alpha = clamp(restAlpha * breath + flare * 0.48, 0.14, 0.96)
-        const radius = restRadius + flare * 2.1 * dpr
-        const sprite = flare > 0.22 ? themeSprites[2] : themeSprites[p.variant]
+        const breath = 0.93 + 0.07 * Math.sin(clock * 1.1 + p.phase)
+        const alpha = clamp(restAlpha * breath + flare * 0.28, 0.16, 0.94)
+        const radius = restRadius + flare * 0.9 * dpr
+        const sprite = flare > 0.30 ? themeSprites[2] : themeSprites[p.variant]
 
         ctx.globalAlpha = alpha
         ctx.drawImage(sprite, x - radius, y - radius, radius * 2, radius * 2)
-
-        // Fast-moving wake particles leave a delicate glowing echo along their displacement vector.
-        if (flare > 0.35) {
-          const speed2 = p.vx * p.vx + p.vy * p.vy
-          if (speed2 > 2200) {
-            const tx = x - p.vx * 0.016 * dpr
-            const ty = y - p.vy * 0.016 * dpr
-            const tr = radius * 0.78
-            ctx.globalAlpha = alpha * 0.45
-            ctx.drawImage(sprite, tx - tr, ty - tr, tr * 2, tr * 2)
-          }
-        }
       }
       ctx.globalAlpha = 1
     }
@@ -1013,8 +1018,8 @@ export default function LivingBackground() {
       pointer.lastT = event.timeStamp || performance.now()
       const scale = isOverConsoleContent(event.target) ? 0.35 : 0.56
       dropWater(event.clientX, event.clientY, 10, scale)
-      // Honey-bubble local nudge when tapping the surface.
-      const reach = 34
+      // Stiff-stem local micro-recoil when tapping the surface.
+      const reach = 28
       const cx = event.clientX
       const cy = event.clientY
       for (let i = 0, len = particles.length; i < len; i++) {
@@ -1025,11 +1030,12 @@ export default function LivingBackground() {
         const d = Math.hypot(dx, dy)
         if (d < reach && d > 0.1) {
           const f = (1 - d / reach) * (1 - d / reach)
-          p.ox = clamp(p.ox + (dx / d) * f * 2.2, -7.5, 7.5)
-          p.oy = clamp(p.oy + (dy / d) * f * 2.2, -7.5, 7.5)
-          p.vx += (dx / d) * f * 52
-          p.vy += (dy / d) * f * 52
-          p.flare = Math.min(1, p.flare + f * 0.65)
+          p.ox += (dx / d) * f * 0.45 * scale
+          p.oy += (dy / d) * f * 0.45 * scale
+          clampStemOffset(p)
+          p.vx += (dx / d) * f * 20 * scale
+          p.vy += (dy / d) * f * 20 * scale
+          p.flare = Math.min(1, p.flare + f * 0.36)
         }
       }
     }
@@ -1053,7 +1059,7 @@ export default function LivingBackground() {
           stampWake(leadX, rect.y + rect.height * 0.7, 12, strength * 0.55, ux, uy)
           stampWake(rect.x + rect.width * 0.5, leadY, 12, strength * 0.5, ux, uy)
         }
-        partParticlesAlongSegment(x - vx * 18, y - vy * 18, x, y, 18)
+        partParticlesAlongSegment(x - vx * 18, y - vy * 18, x, y, 18, 0.8)
       }
 
       const reach = Math.max(innerWidth, innerHeight) * 0.38
