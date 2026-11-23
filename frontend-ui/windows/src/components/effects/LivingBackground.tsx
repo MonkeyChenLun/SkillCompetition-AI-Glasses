@@ -599,9 +599,9 @@ export default function LivingBackground() {
       const speed = clamp(segLen / Math.max(4, dtMs), 0, 3.2) // px/ms
       const ux = sdx / segLen
       const uy = sdy / segLen
-      const reach = clamp(72 + speed * 22, 72, 112)
+      const reach = clamp(44 + speed * 14, 44, 68)
       const reach2 = reach * reach
-      const impulseBase = 240 + speed * 240
+      const impulseBase = 125 + speed * 130
 
       const boxMinX = Math.min(x0, x1) - reach
       const boxMaxX = Math.max(x0, x1) + reach
@@ -633,18 +633,18 @@ export default function LivingBackground() {
         const lx = -uy * side
         const ly = ux * side
 
-        // Viscous entrainment: thicker fluid pulls particles slightly forward along the stroke as they part.
+        // Viscous entrainment with restrained, compact spread amplitude.
         const dirX = rx * 0.42 + lx * 0.68 + ux * 0.28
         const dirY = ry * 0.42 + ly * 0.68 + uy * 0.28
 
-        const directShift = falloff * (6.2 + speed * 3.4)
-        p.ox = clamp(p.ox + dirX * directShift, -44, 44)
-        p.oy = clamp(p.oy + dirY * directShift, -44, 44)
+        const directShift = falloff * (3.0 + speed * 1.6)
+        p.ox = clamp(p.ox + dirX * directShift, -18, 18)
+        p.oy = clamp(p.oy + dirY * directShift, -18, 18)
 
         const push = impulseBase * falloff
         p.vx += dirX * push
         p.vy += dirY * push
-        p.flare = Math.min(1, p.flare + falloff * (0.68 + speed * 0.32))
+        p.flare = Math.min(1, p.flare + falloff * (0.65 + speed * 0.30))
       }
     }
 
@@ -714,10 +714,10 @@ export default function LivingBackground() {
     }
 
     function stepParticles(dt: number) {
-      // Viscous, thick-liquid lattice physics: heavy drag (over-damped syrupy creep, zero jitter).
+      // Viscous, thick-liquid lattice physics with restrained spread amplitude (max ±18px).
       const drag = Math.exp(-10.5 * dt)
       const springK = 14.0
-      const hoverR = 54
+      const hoverR = 38
       const hoverR2 = hoverR * hoverR
       const hasWaves = waveEnergy > 0.005
       const ptx = pointer.tx
@@ -730,7 +730,7 @@ export default function LivingBackground() {
         const px = p.hx + p.ox
         const py = p.hy + p.oy
 
-        // 1. Heavy surface-tension parting around the resting cursor tip.
+        // 1. Compact surface-tension parting around the resting cursor tip.
         if (pSeen) {
           const dx = px - ptx
           const dy = py - pty
@@ -739,14 +739,14 @@ export default function LivingBackground() {
             if (d2 < hoverR2 && d2 > 0.01) {
               const d = Math.sqrt(d2)
               const f = (1 - d / hoverR) * (1 - d / hoverR)
-              p.vx += (dx / d) * f * 360 * dt
-              p.vy += (dy / d) * f * 360 * dt
-              p.flare = Math.min(1, p.flare + f * 1.5 * dt)
+              p.vx += (dx / d) * f * 180 * dt
+              p.vy += (dy / d) * f * 180 * dt
+              p.flare = Math.min(1, p.flare + f * 1.4 * dt)
             }
           }
         }
 
-        // 2. Heavy wave-slope coupling so thick viscous waves carry the particle matrix deeply.
+        // 2. Restrained wave-slope coupling so thick viscous waves gently sway the lattice.
         if (hasWaves) {
           const gx = clamp((px / cellPx) | 0, 1, gw - 2)
           const gy = clamp((py / cellPx) | 0, 1, gh - 2)
@@ -754,18 +754,18 @@ export default function LivingBackground() {
           const nx = (h0[idx + 1] - h0[idx - 1]) * 0.5
           const ny = (h0[idx + gw] - h0[idx - gw]) * 0.5
           if (nx > 0.003 || nx < -0.003 || ny > 0.003 || ny < -0.003) {
-            p.vx += nx * 290 * dt
-            p.vy += ny * 290 * dt
+            p.vx += nx * 140 * dt
+            p.vy += ny * 140 * dt
             const crest = (nx < 0 ? -nx : nx) + (ny < 0 ? -ny : ny)
-            if (crest > 0.025) p.flare = Math.min(1, p.flare + crest * 0.5)
+            if (crest > 0.025) p.flare = Math.min(1, p.flare + crest * 0.45)
           }
         }
 
-        // 3. Thick viscous return back to (hx, hy) with heavy fluid drag.
+        // 3. Thick viscous return back to (hx, hy) with compact displacement ceiling.
         p.vx = (p.vx - springK * p.ox * dt) * drag
         p.vy = (p.vy - springK * p.oy * dt) * drag
-        p.ox = clamp(p.ox + p.vx * dt, -44, 44)
-        p.oy = clamp(p.oy + p.vy * dt, -44, 44)
+        p.ox = clamp(p.ox + p.vx * dt, -18, 18)
+        p.oy = clamp(p.oy + p.vy * dt, -18, 18)
         p.flare *= flareDecay
       }
     }
@@ -1014,8 +1014,8 @@ export default function LivingBackground() {
       pointer.lastT = event.timeStamp || performance.now()
       const scale = isOverConsoleContent(event.target) ? 0.35 : 0.56
       dropWater(event.clientX, event.clientY, 10, scale)
-      // Radial shockwave push on the surrounding particle lattice when tapping the water.
-      const reach = 82
+      // Compact radial shockwave push on the surrounding particle lattice when tapping the water.
+      const reach = 52
       const cx = event.clientX
       const cy = event.clientY
       for (let i = 0, len = particles.length; i < len; i++) {
@@ -1026,11 +1026,11 @@ export default function LivingBackground() {
         const d = Math.hypot(dx, dy)
         if (d < reach && d > 0.1) {
           const f = (1 - d / reach) * (1 - d / reach)
-          p.ox = clamp(p.ox + (dx / d) * f * 8, -46, 46)
-          p.oy = clamp(p.oy + (dy / d) * f * 8, -46, 46)
-          p.vx += (dx / d) * f * 210
-          p.vy += (dy / d) * f * 210
-          p.flare = Math.min(1, p.flare + f * 0.85)
+          p.ox = clamp(p.ox + (dx / d) * f * 4, -18, 18)
+          p.oy = clamp(p.oy + (dy / d) * f * 4, -18, 18)
+          p.vx += (dx / d) * f * 110
+          p.vy += (dy / d) * f * 110
+          p.flare = Math.min(1, p.flare + f * 0.78)
         }
       }
     }
