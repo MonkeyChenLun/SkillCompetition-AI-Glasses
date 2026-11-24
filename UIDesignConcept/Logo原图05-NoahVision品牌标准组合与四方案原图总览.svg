@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1160" viewBox="0 0 1920 1160" fill="none">
+  <defs>
+    <linearGradient id="canvas-bg" x1="0" y1="0" x2="1920" y2="1160" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#070c18"/>
+      <stop offset="55%" stop-color="#0b1324"/>
+      <stop offset="100%" stop-color="#08121d"/>
+    </linearGradient>
+    <linearGradient id="stage-dark-bg" x1="0" y1="0" x2="374" y2="276" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#101f3c"/>
+      <stop offset="100%" stop-color="#091a28"/>
+    </linearGradient>
+    <linearGradient id="stage-light-bg" x1="0" y1="0" x2="840" y2="360" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f8fbff"/>
+      <stop offset="100%" stop-color="#e6effd"/>
+    </linearGradient>
+    <linearGradient id="dk-stroke" x1="14" y1="98" x2="106" y2="18" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#60a5fa"/><stop offset="50%" stop-color="#ffffff"/><stop offset="100%" stop-color="#5eead4"/>
+    </linearGradient>
+    <linearGradient id="dk-fill" x1="16" y1="20" x2="104" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7dd3fc" stop-opacity="0.28"/><stop offset="100%" stop-color="#38bdf8" stop-opacity="0.16"/>
+    </linearGradient>
+    <linearGradient id="dk-star" x1="42" y1="30" x2="78" y2="70" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff"/><stop offset="55%" stop-color="#7dd3fc"/><stop offset="100%" stop-color="#5eead4"/>
+    </linearGradient>
+    <linearGradient id="lt-stroke" x1="14" y1="98" x2="106" y2="18" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1e3a8a"/><stop offset="50%" stop-color="#2563eb"/><stop offset="100%" stop-color="#0d9488"/>
+    </linearGradient>
+    <linearGradient id="lt-fill" x1="16" y1="20" x2="104" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2563eb" stop-opacity="0.24"/><stop offset="100%" stop-color="#0d9488" stop-opacity="0.14"/>
+    </linearGradient>
+    <linearGradient id="lt-star" x1="42" y1="30" x2="78" y2="70" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1e3a8a"/><stop offset="55%" stop-color="#2563eb"/><stop offset="100%" stop-color="#0d9488"/>
+    </linearGradient>
+    <linearGradient id="lt-card" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#e4effd"/>
+    </linearGradient>
+    <linearGradient id="dk-card" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0f1830"/><stop offset="100%" stop-color="#091b29"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1920" height="1160" fill="url(#canvas-bg)"/>
+
+  <!-- Header -->
+  <text x="84" y="86" fill="#f8fafc" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="34" font-weight="700">NoahVision 诺亚视界 — 品牌 Logo 原样标准制图与方案演进总览</text>
+  <text x="84" y="122" fill="#94a3b8" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="17">定稿方案 1B-②：诺亚方舟新月底座 + 联合国式 18 叶对生和平橄榄冠 + 二次贝塞尔流光一笔五角晨星</text>
+
+  <!-- Top Left: Light Mode Brand Lockup -->
+  <g transform="translate(84, 160)">
+    <rect width="856" height="390" rx="30" fill="url(#stage-light-bg)" stroke="#cbd5e1" stroke-width="1.5"/>
+    <text x="36" y="46" fill="#475569" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600">LIGHT THEME LOCKUP · 浅色冰晶标准组合</text>
+    <g transform="translate(64, 92) scale(1.95)">
+      <rect width="120" height="120" rx="28" fill="url(#lt-card)"/>
+      <rect x="1.5" y="1.5" width="117" height="117" rx="26.5" stroke="rgba(37, 99, 235, 0.24)" stroke-width="2.5"/>
+      <path d="M 60 99 C 44 99 31 92 24 80 L 38.8 83.1 C 31.3 89.0 24.7 85.8 21.7 81.1 C 29.1 78.8 33.6 79.7 35.4 80.3 L 27.6 69.8 C 19.0 71.3 15.0 65.9 14.6 60.7 C 21.6 62.0 24.7 64.4 26.0 65.7 L 24.0 52.7 C 16.4 50.3 15.5 44.2 17.4 39.8 C 22.5 43.9 24.0 46.8 24.4 48.4 L 28.2 37.1 C 23.0 32.1 24.7 26.7 28.0 24.0 C 30.5 29.3 30.8 31.9 30.5 33.4 L 35.0 28.1 C 35.5 22.6 43.6 19.8 43.6 19.8 C 41.2 27.6 34.9 28.9 34.9 28.9 L 31.6 32.6 C 34.0 30.8 38.3 29.9 38.3 29.9 C 37.6 33.4 34.7 36.8 29.5 35.7 L 25.1 47.2 C 26.7 43.9 30.5 40.9 30.5 40.9 C 31.6 44.7 30.3 49.5 24.5 50.9 L 26.0 64.4 C 25.7 60.0 27.9 55.2 27.9 55.2 C 30.9 58.3 32.1 63.7 27.2 67.9 L 34.8 79.2 C 32.1 74.9 31.8 69.1 31.8 69.1 C 36.2 70.6 40.1 75.1 37.6 81.7 C 34 86 46 90 60 90 C 74 90 86 86 96 80 L 81.2 83.1 C 88.7 89.0 95.3 85.8 98.3 81.1 C 90.9 78.8 86.4 79.7 84.6 80.3 L 92.4 69.8 C 101.0 71.3 105.0 65.9 105.4 60.7 C 98.4 62.0 95.3 64.4 94.0 65.7 L 96.0 52.7 C 103.6 50.3 104.5 44.2 102.6 39.8 C 97.5 43.9 96.0 46.8 95.6 48.4 L 91.8 37.1 C 97.0 32.1 95.3 26.7 92.0 24.0 C 89.5 29.3 89.2 31.9 89.5 33.4 L 85.0 28.1 C 84.5 22.6 76.4 19.8 76.4 19.8 C 78.8 27.6 85.1 28.9 85.1 28.9 L 88.4 32.6 C 86.0 30.8 81.7 29.9 81.7 29.9 C 82.4 33.4 85.3 36.8 90.5 35.7 L 94.9 47.2 C 93.3 43.9 89.5 40.9 89.5 40.9 C 88.4 44.7 89.7 49.5 95.5 50.9 L 94.0 64.4 C 94.3 60.0 92.1 55.2 92.1 55.2 C 89.1 58.3 87.9 63.7 92.8 67.9 L 85.2 79.2 C 87.9 74.9 88.2 69.1 88.2 69.1 C 83.8 70.6 79.9 75.1 82.4 81.7 C 89 92 76 99 60 99 Z" fill="url(#lt-fill)" stroke="url(#lt-stroke)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M 60.0 31.5 Q 64.0 50.2 71.8 67.7 Q 57.5 54.9 41.0 45.3 Q 60.0 47.3 79.0 45.3 Q 62.5 54.9 48.2 67.7 Q 56.0 50.2 60.0 31.5 Z" fill="url(#lt-fill)" stroke="url(#lt-star)" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <text x="342" y="188" fill="#0f172a" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="54" font-weight="800" letter-spacing="-1">NoahVision</text>
+    <text x="345" y="236" fill="#1e40af" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="24" font-weight="600" letter-spacing="2">诺亚视界 · 智能眼镜管理平台</text>
+    <text x="345" y="278" fill="#475569" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="15.5">SEE BEYOND · 视听双模态无障碍 AI 守护方舟</text>
+    <g transform="translate(345, 306)">
+      <rect width="136" height="32" rx="16" fill="#1e3a8a"/><text x="20" y="21" fill="#fff" font-family="Consolas, monospace" font-size="13">#1E3A8A 深舟蓝</text>
+      <rect x="148" width="136" height="32" rx="16" fill="#2563eb"/><text x="168" y="21" fill="#fff" font-family="Consolas, monospace" font-size="13">#2563EB 光学钴</text>
+      <rect x="296" width="136" height="32" rx="16" fill="#0d9488"/><text x="316" y="21" fill="#fff" font-family="Consolas, monospace" font-size="13">#0D9488 橄榄青</text>
+    </g>
+  </g>
+
+  <!-- Top Right: Dark Mode Brand Lockup -->
+  <g transform="translate(980, 160)">
+    <rect width="856" height="390" rx="30" fill="url(#stage-dark-bg)" stroke="rgba(125,211,252,0.28)" stroke-width="1.5"/>
+    <text x="36" y="46" fill="#93c5fd" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600">DARK THEME LOCKUP · 深海琉璃标准组合</text>
+    <g transform="translate(64, 92) scale(1.95)">
+      <rect width="120" height="120" rx="28" fill="url(#dk-card)"/>
+      <rect x="1.5" y="1.5" width="117" height="117" rx="26.5" stroke="rgba(125, 211, 252, 0.30)" stroke-width="2.5"/>
+      <path d="M 60 99 C 44 99 31 92 24 80 L 38.8 83.1 C 31.3 89.0 24.7 85.8 21.7 81.1 C 29.1 78.8 33.6 79.7 35.4 80.3 L 27.6 69.8 C 19.0 71.3 15.0 65.9 14.6 60.7 C 21.6 62.0 24.7 64.4 26.0 65.7 L 24.0 52.7 C 16.4 50.3 15.5 44.2 17.4 39.8 C 22.5 43.9 24.0 46.8 24.4 48.4 L 28.2 37.1 C 23.0 32.1 24.7 26.7 28.0 24.0 C 30.5 29.3 30.8 31.9 30.5 33.4 L 35.0 28.1 C 35.5 22.6 43.6 19.8 43.6 19.8 C 41.2 27.6 34.9 28.9 34.9 28.9 L 31.6 32.6 C 34.0 30.8 38.3 29.9 38.3 29.9 C 37.6 33.4 34.7 36.8 29.5 35.7 L 25.1 47.2 C 26.7 43.9 30.5 40.9 30.5 40.9 C 31.6 44.7 30.3 49.5 24.5 50.9 L 26.0 64.4 C 25.7 60.0 27.9 55.2 27.9 55.2 C 30.9 58.3 32.1 63.7 27.2 67.9 L 34.8 79.2 C 32.1 74.9 31.8 69.1 31.8 69.1 C 36.2 70.6 40.1 75.1 37.6 81.7 C 34 86 46 90 60 90 C 74 90 86 86 96 80 L 81.2 83.1 C 88.7 89.0 95.3 85.8 98.3 81.1 C 90.9 78.8 86.4 79.7 84.6 80.3 L 92.4 69.8 C 101.0 71.3 105.0 65.9 105.4 60.7 C 98.4 62.0 95.3 64.4 94.0 65.7 L 96.0 52.7 C 103.6 50.3 104.5 44.2 102.6 39.8 C 97.5 43.9 96.0 46.8 95.6 48.4 L 91.8 37.1 C 97.0 32.1 95.3 26.7 92.0 24.0 C 89.5 29.3 89.2 31.9 89.5 33.4 L 85.0 28.1 C 84.5 22.6 76.4 19.8 76.4 19.8 C 78.8 27.6 85.1 28.9 85.1 28.9 L 88.4 32.6 C 86.0 30.8 81.7 29.9 81.7 29.9 C 82.4 33.4 85.3 36.8 90.5 35.7 L 94.9 47.2 C 93.3 43.9 89.5 40.9 89.5 40.9 C 88.4 44.7 89.7 49.5 95.5 50.9 L 94.0 64.4 C 94.3 60.0 92.1 55.2 92.1 55.2 C 89.1 58.3 87.9 63.7 92.8 67.9 L 85.2 79.2 C 87.9 74.9 88.2 69.1 88.2 69.1 C 83.8 70.6 79.9 75.1 82.4 81.7 C 89 92 76 99 60 99 Z" fill="url(#dk-fill)" stroke="url(#dk-stroke)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M 60.0 31.5 Q 64.0 50.2 71.8 67.7 Q 57.5 54.9 41.0 45.3 Q 60.0 47.3 79.0 45.3 Q 62.5 54.9 48.2 67.7 Q 56.0 50.2 60.0 31.5 Z" fill="url(#dk-fill)" stroke="url(#dk-star)" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <text x="342" y="188" fill="#f8fafc" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="54" font-weight="800" letter-spacing="-1">NoahVision</text>
+    <text x="345" y="236" fill="#7dd3fc" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="24" font-weight="600" letter-spacing="2">诺亚视界 · 智能眼镜管理平台</text>
+    <text x="345" y="278" fill="#94a3b8" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="15.5">SEE BEYOND · 视听双模态无障碍 AI 守护方舟</text>
+    <g transform="translate(345, 306)">
+      <rect width="136" height="32" rx="16" fill="#60a5fa"/><text x="20" y="21" fill="#091326" font-family="Consolas, monospace" font-size="13" font-weight="700">#60A5FA 天穹蓝</text>
+      <rect x="148" width="136" height="32" rx="16" fill="#ffffff"/><text x="168" y="21" fill="#091326" font-family="Consolas, monospace" font-size="13" font-weight="700">#FFFFFF 晨星白</text>
+      <rect x="296" width="136" height="32" rx="16" fill="#5eead4"/><text x="316" y="21" fill="#091326" font-family="Consolas, monospace" font-size="13" font-weight="700">#5EEAD4 荧光青</text>
+    </g>
+  </g>
+
+  <!-- Bottom Row: All 4 1B Unicursal Star Variations from Design Studio -->
+  <text x="84" y="618" fill="#e2e8f0" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="22" font-weight="700">1B 系列一笔画五角星四款原样矢量方案对比（最终选定 1B-② 实装）</text>
+
+  
+    <g transform="translate(84, 648)">
+      <rect width="410" height="430" rx="26" fill="#0d1629" stroke="rgba(148,163,184,0.22)" stroke-width="1.2"/>
+      <rect x="18" y="18" width="374" height="276" rx="18" fill="url(#stage-dark-bg)" stroke="rgba(255,255,255,0.08)"/>
+      <rect x="32" y="32" width="172" height="28" rx="14" fill="rgba(255,255,255,0.10)"/>
+      <text x="46" y="51" fill="#ffffff" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="13" font-weight="600">1B-① · 经典一笔五角星</text>
+      <g transform="translate(115, 76) scale(1.5)">
+        <path d="M 60 99 C 44 99 31 92 24 80 L 38.8 83.1 C 31.3 89.0 24.7 85.8 21.7 81.1 C 29.1 78.8 33.6 79.7 35.4 80.3 L 27.6 69.8 C 19.0 71.3 15.0 65.9 14.6 60.7 C 21.6 62.0 24.7 64.4 26.0 65.7 L 24.0 52.7 C 16.4 50.3 15.5 44.2 17.4 39.8 C 22.5 43.9 24.0 46.8 24.4 48.4 L 28.2 37.1 C 23.0 32.1 24.7 26.7 28.0 24.0 C 30.5 29.3 30.8 31.9 30.5 33.4 L 35.0 28.1 C 35.5 22.6 43.6 19.8 43.6 19.8 C 41.2 27.6 34.9 28.9 34.9 28.9 L 31.6 32.6 C 34.0 30.8 38.3 29.9 38.3 29.9 C 37.6 33.4 34.7 36.8 29.5 35.7 L 25.1 47.2 C 26.7 43.9 30.5 40.9 30.5 40.9 C 31.6 44.7 30.3 49.5 24.5 50.9 L 26.0 64.4 C 25.7 60.0 27.9 55.2 27.9 55.2 C 30.9 58.3 32.1 63.7 27.2 67.9 L 34.8 79.2 C 32.1 74.9 31.8 69.1 31.8 69.1 C 36.2 70.6 40.1 75.1 37.6 81.7 C 34 86 46 90 60 90 C 74 90 86 86 96 80 L 81.2 83.1 C 88.7 89.0 95.3 85.8 98.3 81.1 C 90.9 78.8 86.4 79.7 84.6 80.3 L 92.4 69.8 C 101.0 71.3 105.0 65.9 105.4 60.7 C 98.4 62.0 95.3 64.4 94.0 65.7 L 96.0 52.7 C 103.6 50.3 104.5 44.2 102.6 39.8 C 97.5 43.9 96.0 46.8 95.6 48.4 L 91.8 37.1 C 97.0 32.1 95.3 26.7 92.0 24.0 C 89.5 29.3 89.2 31.9 89.5 33.4 L 85.0 28.1 C 84.5 22.6 76.4 19.8 76.4 19.8 C 78.8 27.6 85.1 28.9 85.1 28.9 L 88.4 32.6 C 86.0 30.8 81.7 29.9 81.7 29.9 C 82.4 33.4 85.3 36.8 90.5 35.7 L 94.9 47.2 C 93.3 43.9 89.5 40.9 89.5 40.9 C 88.4 44.7 89.7 49.5 95.5 50.9 L 94.0 64.4 C 94.3 60.0 92.1 55.2 92.1 55.2 C 89.1 58.3 87.9 63.7 92.8 67.9 L 85.2 79.2 C 87.9 74.9 88.2 69.1 88.2 69.1 C 83.8 70.6 79.9 75.1 82.4 81.7 C 89 92 76 99 60 99 Z" fill="url(#dk-fill)" stroke="url(#dk-stroke)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+     <path d="M 60.0 32.0 L 71.5 67.3 L 41.5 45.5 L 78.5 45.5 L 48.5 67.3 Z" fill="url(#dk-fill)" stroke="url(#dk-star)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+      <text x="24" y="332" fill="#f8fafc" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="20" font-weight="700">经典连线一笔星</text>
+      <text x="24" y="360" fill="#94a3b8" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="13.5">直线一笔穿梭五角星，内部围合正五边形光核</text>
+      <text x="24" y="396" fill="#64748b" font-family="Consolas, monospace" font-size="12.5">CONCEPT EXPLORATION</text>
+    </g>
+
+  
+    <g transform="translate(528, 648)">
+      <rect width="410" height="430" rx="26" fill="#0d1629" stroke="#3b82f6" stroke-width="2.5"/>
+      <rect x="18" y="18" width="374" height="276" rx="18" fill="url(#stage-dark-bg)" stroke="rgba(255,255,255,0.08)"/>
+      <rect x="32" y="32" width="210" height="28" rx="14" fill="#2563eb"/>
+      <text x="46" y="51" fill="#ffffff" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="13" font-weight="600">1B-② · 流光弧线一笔星 [定稿]</text>
+      <g transform="translate(115, 76) scale(1.5)">
+        <path d="M 60 99 C 44 99 31 92 24 80 L 38.8 83.1 C 31.3 89.0 24.7 85.8 21.7 81.1 C 29.1 78.8 33.6 79.7 35.4 80.3 L 27.6 69.8 C 19.0 71.3 15.0 65.9 14.6 60.7 C 21.6 62.0 24.7 64.4 26.0 65.7 L 24.0 52.7 C 16.4 50.3 15.5 44.2 17.4 39.8 C 22.5 43.9 24.0 46.8 24.4 48.4 L 28.2 37.1 C 23.0 32.1 24.7 26.7 28.0 24.0 C 30.5 29.3 30.8 31.9 30.5 33.4 L 35.0 28.1 C 35.5 22.6 43.6 19.8 43.6 19.8 C 41.2 27.6 34.9 28.9 34.9 28.9 L 31.6 32.6 C 34.0 30.8 38.3 29.9 38.3 29.9 C 37.6 33.4 34.7 36.8 29.5 35.7 L 25.1 47.2 C 26.7 43.9 30.5 40.9 30.5 40.9 C 31.6 44.7 30.3 49.5 24.5 50.9 L 26.0 64.4 C 25.7 60.0 27.9 55.2 27.9 55.2 C 30.9 58.3 32.1 63.7 27.2 67.9 L 34.8 79.2 C 32.1 74.9 31.8 69.1 31.8 69.1 C 36.2 70.6 40.1 75.1 37.6 81.7 C 34 86 46 90 60 90 C 74 90 86 86 96 80 L 81.2 83.1 C 88.7 89.0 95.3 85.8 98.3 81.1 C 90.9 78.8 86.4 79.7 84.6 80.3 L 92.4 69.8 C 101.0 71.3 105.0 65.9 105.4 60.7 C 98.4 62.0 95.3 64.4 94.0 65.7 L 96.0 52.7 C 103.6 50.3 104.5 44.2 102.6 39.8 C 97.5 43.9 96.0 46.8 95.6 48.4 L 91.8 37.1 C 97.0 32.1 95.3 26.7 92.0 24.0 C 89.5 29.3 89.2 31.9 89.5 33.4 L 85.0 28.1 C 84.5 22.6 76.4 19.8 76.4 19.8 C 78.8 27.6 85.1 28.9 85.1 28.9 L 88.4 32.6 C 86.0 30.8 81.7 29.9 81.7 29.9 C 82.4 33.4 85.3 36.8 90.5 35.7 L 94.9 47.2 C 93.3 43.9 89.5 40.9 89.5 40.9 C 88.4 44.7 89.7 49.5 95.5 50.9 L 94.0 64.4 C 94.3 60.0 92.1 55.2 92.1 55.2 C 89.1 58.3 87.9 63.7 92.8 67.9 L 85.2 79.2 C 87.9 74.9 88.2 69.1 88.2 69.1 C 83.8 70.6 79.9 75.1 82.4 81.7 C 89 92 76 99 60 99 Z" fill="url(#dk-fill)" stroke="url(#dk-stroke)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+     <path d="M 60.0 31.5 Q 64.0 50.2 71.8 67.7 Q 57.5 54.9 41.0 45.3 Q 60.0 47.3 79.0 45.3 Q 62.5 54.9 48.2 67.7 Q 56.0 50.2 60.0 31.5 Z" fill="url(#dk-fill)" stroke="url(#dk-star)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+      <text x="24" y="332" fill="#f8fafc" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="20" font-weight="700">流光弧线一笔星</text>
+      <text x="24" y="360" fill="#94a3b8" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="13.5">二次贝塞尔微凹流体光弧，与方舟柳叶弧度浑然一体</text>
+      <text x="24" y="396" fill="#60a5fa" font-family="Consolas, monospace" font-size="12.5">★ SELECTED FINAL TOTEM (V0.1.9)</text>
+    </g>
+
+  
+    <g transform="translate(972, 648)">
+      <rect width="410" height="430" rx="26" fill="#0d1629" stroke="rgba(148,163,184,0.22)" stroke-width="1.2"/>
+      <rect x="18" y="18" width="374" height="276" rx="18" fill="url(#stage-dark-bg)" stroke="rgba(255,255,255,0.08)"/>
+      <rect x="32" y="32" width="172" height="28" rx="14" fill="rgba(255,255,255,0.10)"/>
+      <text x="46" y="51" fill="#ffffff" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="13" font-weight="600">1B-③ · 星舟全程一根线</text>
+      <g transform="translate(115, 76) scale(1.5)">
+        <path d="M 78.1 44.6 L 48.8 65.9 L 60.0 31.5 L 71.2 65.9 L 41.9 44.6 L 78.1 44.6 L 48.8 65.9 C 51 78 55 86 60 90 C 46 90 34 86 24 80 L 38.8 83.1 C 31.3 89.0 24.7 85.8 21.7 81.1 C 29.1 78.8 33.6 79.7 35.4 80.3 L 27.6 69.8 C 19.0 71.3 15.0 65.9 14.6 60.7 C 21.6 62.0 24.7 64.4 26.0 65.7 L 24.0 52.7 C 16.4 50.3 15.5 44.2 17.4 39.8 C 22.5 43.9 24.0 46.8 24.4 48.4 L 28.2 37.1 C 23.0 32.1 24.7 26.7 28.0 24.0 C 30.5 29.3 30.8 31.9 30.5 33.4 L 35.0 28.1 C 35.5 22.6 43.6 19.8 43.6 19.8 C 41.2 27.6 34.9 28.9 34.9 28.9 L 31.6 32.6 C 34.0 30.8 38.3 29.9 38.3 29.9 C 37.6 33.4 34.7 36.8 29.5 35.7 L 25.1 47.2 C 26.7 43.9 30.5 40.9 30.5 40.9 C 31.6 44.7 30.3 49.5 24.5 50.9 L 26.0 64.4 C 25.7 60.0 27.9 55.2 27.9 55.2 C 30.9 58.3 32.1 63.7 27.2 67.9 L 34.8 79.2 C 32.1 74.9 31.8 69.1 31.8 69.1 C 36.2 70.6 40.1 75.1 37.6 81.7 C 31 92 44 99 60 99 C 76 99 89 92 96 80 L 81.2 83.1 C 88.7 89.0 95.3 85.8 98.3 81.1 C 90.9 78.8 86.4 79.7 84.6 80.3 L 92.4 69.8 C 101.0 71.3 105.0 65.9 105.4 60.7 C 98.4 62.0 95.3 64.4 94.0 65.7 L 96.0 52.7 C 103.6 50.3 104.5 44.2 102.6 39.8 C 97.5 43.9 96.0 46.8 95.6 48.4 L 91.8 37.1 C 97.0 32.1 95.3 26.7 92.0 24.0 C 89.5 29.3 89.2 31.9 89.5 33.4 L 85.0 28.1 C 84.5 22.6 76.4 19.8 76.4 19.8 C 78.8 27.6 85.1 28.9 85.1 28.9 L 88.4 32.6 C 86.0 30.8 81.7 29.9 81.7 29.9 C 82.4 33.4 85.3 36.8 90.5 35.7 L 94.9 47.2 C 93.3 43.9 89.5 40.9 89.5 40.9 C 88.4 44.7 89.7 49.5 95.5 50.9 L 94.0 64.4 C 94.3 60.0 92.1 55.2 92.1 55.2 C 89.1 58.3 87.9 63.7 92.8 67.9 L 85.2 79.2 C 87.9 74.9 88.2 69.1 88.2 69.1 C 83.8 70.6 79.9 75.1 82.4 81.7 C 86 86 74 90 60 90" fill="url(#dk-fill)" stroke="url(#dk-stroke)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+      <text x="24" y="332" fill="#f8fafc" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="20" font-weight="700">星舟全程一笔画</text>
+      <text x="24" y="360" fill="#94a3b8" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="13.5">五角星收笔直接流入方舟与18片橄榄叶，全图仅单线</text>
+      <text x="24" y="396" fill="#64748b" font-family="Consolas, monospace" font-size="12.5">CONCEPT EXPLORATION</text>
+    </g>
+
+  
+    <g transform="translate(1416, 648)">
+      <rect width="410" height="430" rx="26" fill="#0d1629" stroke="rgba(148,163,184,0.22)" stroke-width="1.2"/>
+      <rect x="18" y="18" width="374" height="276" rx="18" fill="url(#stage-dark-bg)" stroke="rgba(255,255,255,0.08)"/>
+      <rect x="32" y="32" width="172" height="28" rx="14" fill="rgba(255,255,255,0.10)"/>
+      <text x="46" y="51" fill="#ffffff" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="13" font-weight="600">1B-④ · 飞白开口一笔星</text>
+      <g transform="translate(115, 76) scale(1.5)">
+        <path d="M 60 99 C 44 99 31 92 24 80 L 38.8 83.1 C 31.3 89.0 24.7 85.8 21.7 81.1 C 29.1 78.8 33.6 79.7 35.4 80.3 L 27.6 69.8 C 19.0 71.3 15.0 65.9 14.6 60.7 C 21.6 62.0 24.7 64.4 26.0 65.7 L 24.0 52.7 C 16.4 50.3 15.5 44.2 17.4 39.8 C 22.5 43.9 24.0 46.8 24.4 48.4 L 28.2 37.1 C 23.0 32.1 24.7 26.7 28.0 24.0 C 30.5 29.3 30.8 31.9 30.5 33.4 L 35.0 28.1 C 35.5 22.6 43.6 19.8 43.6 19.8 C 41.2 27.6 34.9 28.9 34.9 28.9 L 31.6 32.6 C 34.0 30.8 38.3 29.9 38.3 29.9 C 37.6 33.4 34.7 36.8 29.5 35.7 L 25.1 47.2 C 26.7 43.9 30.5 40.9 30.5 40.9 C 31.6 44.7 30.3 49.5 24.5 50.9 L 26.0 64.4 C 25.7 60.0 27.9 55.2 27.9 55.2 C 30.9 58.3 32.1 63.7 27.2 67.9 L 34.8 79.2 C 32.1 74.9 31.8 69.1 31.8 69.1 C 36.2 70.6 40.1 75.1 37.6 81.7 C 34 86 46 90 60 90 C 74 90 86 86 96 80 L 81.2 83.1 C 88.7 89.0 95.3 85.8 98.3 81.1 C 90.9 78.8 86.4 79.7 84.6 80.3 L 92.4 69.8 C 101.0 71.3 105.0 65.9 105.4 60.7 C 98.4 62.0 95.3 64.4 94.0 65.7 L 96.0 52.7 C 103.6 50.3 104.5 44.2 102.6 39.8 C 97.5 43.9 96.0 46.8 95.6 48.4 L 91.8 37.1 C 97.0 32.1 95.3 26.7 92.0 24.0 C 89.5 29.3 89.2 31.9 89.5 33.4 L 85.0 28.1 C 84.5 22.6 76.4 19.8 76.4 19.8 C 78.8 27.6 85.1 28.9 85.1 28.9 L 88.4 32.6 C 86.0 30.8 81.7 29.9 81.7 29.9 C 82.4 33.4 85.3 36.8 90.5 35.7 L 94.9 47.2 C 93.3 43.9 89.5 40.9 89.5 40.9 C 88.4 44.7 89.7 49.5 95.5 50.9 L 94.0 64.4 C 94.3 60.0 92.1 55.2 92.1 55.2 C 89.1 58.3 87.9 63.7 92.8 67.9 L 85.2 79.2 C 87.9 74.9 88.2 69.1 88.2 69.1 C 83.8 70.6 79.9 75.1 82.4 81.7 C 89 92 76 99 60 99 Z" fill="url(#dk-fill)" stroke="url(#dk-stroke)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+     <path d="M 41.5 45.5 L 78.5 45.5 L 48.5 67.3 L 60.0 32.0 L 71.5 67.3 L 49.9 51.6" fill="none" stroke="url(#dk-star)" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+      <text x="24" y="332" fill="#f8fafc" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="20" font-weight="700">灵动开口一笔星</text>
+      <text x="24" y="360" fill="#94a3b8" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="13.5">保留收笔飞白呼吸开口，极小尺寸 16px 下通透灵动</text>
+      <text x="24" y="396" fill="#64748b" font-family="Consolas, monospace" font-size="12.5">CONCEPT EXPLORATION</text>
+    </g>
+</svg>
