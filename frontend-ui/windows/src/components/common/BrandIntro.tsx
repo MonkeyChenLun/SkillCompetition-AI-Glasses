@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useThemePreference } from '../../services/theme'
-import { FLUID_UNICURSAL_STAR_PATH, NOAH_ARK_OLIVE_WREATH_PATH } from './BrandMark'
+import { COCHLEAR_PUPIL, COCHLEAR_SPIRAL_PATH, COCHLEAR_STROKE_WIDTH } from './BrandMark'
 import './brand-intro.css'
 
-const introKey = 'aig-ui-brand-intro-v6'
-const INTRO_DURATION_MS = 3950
-const DISSOLVE_AT_MS = 3300
+const introKey = 'aig-ui-brand-intro-v7'
+const INTRO_DURATION_MS = 3850
+const DISSOLVE_AT_MS = 3220
 const reducedMotionQuery = '(prefers-reduced-motion: reduce)'
 export const REPLAY_INTRO_EVENT = 'noah:replay-intro'
 
-/** Trigger the NoahVision startup cinema on demand (e.g., for live competition demos). */
+/** Trigger the NoahVision "Cochlear Eye · 耳蜗之眼" startup cinema on demand. */
 export function replayBrandIntro() {
   window.dispatchEvent(new CustomEvent(REPLAY_INTRO_EVENT))
 }
@@ -28,6 +28,13 @@ const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2
 const easeOutQuart = (t: number) => 1 - (1 - t) ** 4
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v)
 
+/** Subtle spring pop for the focal pupil ignition ("中间一点瞳孔代表「看」"). */
+function easeOutBack(t: number) {
+  const c1 = 1.70158
+  const c3 = c1 + 1
+  return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2
+}
+
 export default function BrandIntro({ children }: { children: ReactNode }) {
   const { resolvedTheme } = useThemePreference()
   const [introTheme, setIntroTheme] = useState(resolvedTheme)
@@ -36,10 +43,10 @@ export default function BrandIntro({ children }: { children: ReactNode }) {
   const [runId, setRunId] = useState(0)
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const wreathRef = useRef<SVGPathElement>(null)
-  const starRef = useRef<SVGPathElement>(null)
-  const wreathTipRef = useRef<SVGCircleElement>(null)
-  const starTipRef = useRef<SVGCircleElement>(null)
+  const spiralRef = useRef<SVGPathElement>(null)
+  const spiralTipRef = useRef<SVGCircleElement>(null)
+  const pupilRef = useRef<SVGCircleElement>(null)
+  const pupilHaloRef = useRef<SVGCircleElement>(null)
   const uid = useId().replace(/:/g, '')
 
   const finish = useCallback(() => {
@@ -53,7 +60,7 @@ export default function BrandIntro({ children }: { children: ReactNode }) {
       setIntroTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light')
       setDissolving(false)
       setActive(true)
-      setRunId(n => n + 1)
+      setRunId((n) => n + 1)
     }
     window.addEventListener(REPLAY_INTRO_EVENT, onReplay)
     return () => window.removeEventListener(REPLAY_INTRO_EVENT, onReplay)
@@ -69,26 +76,33 @@ export default function BrandIntro({ children }: { children: ReactNode }) {
 
     const canvas = canvasRef.current
     const ctx = canvas?.getContext('2d')
-    const wreathEl = wreathRef.current
-    const starEl = starRef.current
-    const wreathTip = wreathTipRef.current
-    const starTip = starTipRef.current
+    const spiralEl = spiralRef.current
+    const spiralTip = spiralTipRef.current
+    const pupilEl = pupilRef.current
+    const pupilHaloEl = pupilHaloRef.current
 
-    const wreathLen = wreathEl?.getTotalLength?.() || 1
-    const starLen = starEl?.getTotalLength?.() || 1
-
+    const spiralLen = spiralEl?.getTotalLength?.() || 1
     const isLight = introTheme === 'light'
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
 
-    type Mote = { angle: number; radius: number; speed: number; radialSpeed: number; size: number; alpha: number; hue: number }
-    const motes: Mote[] = Array.from({ length: 76 }, (_, i) => ({
-      angle: (i * 2.39996) % (Math.PI * 2),
-      radius: 40 + (i % 19) * 18 + Math.random() * 25,
-      speed: (0.28 + (i % 5) * 0.12) * (i % 2 === 0 ? 1 : -1),
-      radialSpeed: -14 - (i % 7) * 3,
-      size: 1.1 + (i % 4) * 0.55,
-      alpha: 0.35 + (i % 5) * 0.12,
-      hue: i % 3,
+    type SoundMote = {
+      baseAngle: number
+      startRadius: number
+      endRadius: number
+      speed: number
+      size: number
+      alpha: number
+      isTeal: boolean
+    }
+    // Acoustic particles spiraling inward like sound waves entering the cochlea.
+    const motes: SoundMote[] = Array.from({ length: 64 }, (_, i) => ({
+      baseAngle: (i * 2.39996) % (Math.PI * 2),
+      startRadius: 90 + (i % 16) * 16,
+      endRadius: 34 + (i % 9) * 8,
+      speed: 0.72 + (i % 5) * 0.16,
+      size: 1.2 + (i % 4) * 0.55,
+      alpha: 0.32 + (i % 5) * 0.11,
+      isTeal: i % 2 === 0,
     }))
 
     function resize() {
@@ -113,82 +127,84 @@ export default function BrandIntro({ children }: { children: ReactNode }) {
         return
       }
 
-      // 1. Update single-stroke SVG paths & live comet-light drawing tips
-      const pWreath = easeInOutCubic(clamp01((elapsed - 160) / 1880))
-      const pStar = easeInOutCubic(clamp01((elapsed - 680) / 1520))
-      const pFill = easeOutQuart(clamp01((elapsed - 1750) / 850))
+      // Phase 1 ("听"): Single-stroke cochlear spiral sweeps clockwise from outer tail inward (120ms -> 1680ms)
+      const pSpiral = easeInOutCubic(clamp01((elapsed - 120) / 1560))
+      // Phase 2 ("看"): Focal pupil dot ignites at the center right as the spiral curls home (1320ms -> 1960ms)
+      const pPupilRaw = clamp01((elapsed - 1320) / 640)
+      const pupilScale = pPupilRaw <= 0 ? 0 : Math.max(0, easeOutBack(pPupilRaw))
 
-      if (wreathEl) {
-        wreathEl.style.strokeDashoffset = String(1 - pWreath)
-        wreathEl.style.fillOpacity = String(pFill)
+      if (spiralEl) {
+        spiralEl.style.strokeDashoffset = String(1 - pSpiral)
       }
-      if (starEl) {
-        starEl.style.strokeDashoffset = String(1 - pStar)
-        starEl.style.fillOpacity = String(pFill)
-      }
-      if (wreathTip && wreathEl) {
-        if (pWreath > 0.01 && pWreath < 0.995) {
-          const pt = wreathEl.getPointAtLength(pWreath * wreathLen)
-          wreathTip.setAttribute('cx', pt.x.toFixed(1))
-          wreathTip.setAttribute('cy', pt.y.toFixed(1))
-          wreathTip.style.opacity = '1'
+      if (spiralTip && spiralEl) {
+        if (pSpiral > 0.01 && pSpiral < 0.992) {
+          const pt = spiralEl.getPointAtLength(pSpiral * spiralLen)
+          spiralTip.setAttribute('cx', pt.x.toFixed(2))
+          spiralTip.setAttribute('cy', pt.y.toFixed(2))
+          spiralTip.style.opacity = '1'
         } else {
-          wreathTip.style.opacity = '0'
+          spiralTip.style.opacity = '0'
         }
       }
-      if (starTip && starEl) {
-        if (pStar > 0.01 && pStar < 0.995) {
-          const pt = starEl.getPointAtLength(pStar * starLen)
-          starTip.setAttribute('cx', pt.x.toFixed(1))
-          starTip.setAttribute('cy', pt.y.toFixed(1))
-          starTip.style.opacity = '1'
-        } else {
-          starTip.style.opacity = '0'
-        }
+      if (pupilEl) {
+        pupilEl.setAttribute('r', (COCHLEAR_PUPIL.r * pupilScale).toFixed(2))
+        pupilEl.style.opacity = pPupilRaw > 0.01 ? '1' : '0'
+      }
+      if (pupilHaloEl) {
+        const haloProgress = clamp01((elapsed - 1340) / 1100)
+        const haloR = COCHLEAR_PUPIL.r * (1 + easeOutQuart(haloProgress) * 2.4)
+        const haloAlpha = haloProgress > 0 ? (1 - haloProgress) * 0.55 : 0
+        pupilHaloEl.setAttribute('r', haloR.toFixed(2))
+        pupilHaloEl.style.opacity = haloAlpha.toFixed(3)
       }
 
-      // 2. Render concentric water ripples, caustic shockwave and orbital bioluminescent particles on canvas
+      // Render acoustic cochlear soundwave rings + pupil ignition flash + spiraling sound motes
       if (ctx && canvas) {
         const w = canvas.width
         const h = canvas.height
         const cx = w * 0.5
-        const cy = h * 0.44
+        const cy = h * 0.435
         const tSec = elapsed / 1000
         ctx.clearRect(0, 0, w, h)
 
-        // Concentric water ripple rings radiating from the totem center
-        const ringTimes = [0.05, 0.55, 1.15, 1.85]
-        for (const rt of ringTimes) {
-          const age = tSec - rt
-          if (age <= 0 || age > 2.4) continue
-          const progress = age / 2.4
-          const radius = (28 + easeOutQuart(progress) * 340) * dpr
-          const alpha = (1 - progress) * (1 - progress) * (isLight ? 0.24 : 0.32)
+        const blueRGB = isLight ? '29, 78, 216' : '59, 130, 246'
+        const tealRGB = isLight ? '20, 184, 166' : '45, 212, 191'
+
+        // Acoustic wave rings (outer sound -> inner hearing, plus the 1.34s pupil "light awakening" ripple)
+        const ringSpecs = [
+          { at: 0.08, maxR: 280, color: blueRGB, weight: 1.8 },
+          { at: 0.58, maxR: 310, color: tealRGB, weight: 1.8 },
+          { at: 1.34, maxR: 380, color: tealRGB, weight: 2.6 },
+        ]
+        for (const ring of ringSpecs) {
+          const age = tSec - ring.at
+          if (age <= 0 || age > 2.2) continue
+          const p = age / 2.2
+          const radius = (22 + easeOutQuart(p) * ring.maxR) * dpr
+          const alpha = (1 - p) * (1 - p) * (isLight ? 0.22 : 0.30)
           ctx.beginPath()
           ctx.arc(cx, cy, radius, 0, Math.PI * 2)
-          ctx.strokeStyle = isLight ? `rgba(37, 99, 235, ${alpha})` : `rgba(125, 211, 252, ${alpha})`
-          ctx.lineWidth = (2.2 - progress * 1.4) * dpr
+          ctx.strokeStyle = `rgba(${ring.color}, ${alpha})`
+          ctx.lineWidth = Math.max(0.6, (ring.weight - p * 1.2) * dpr)
           ctx.stroke()
         }
 
-        // Orbital glowing water particles swirling gently around the Noah Ark & Star
-        const moteColors = isLight
-          ? ['37, 99, 235', '14, 148, 196', '79, 70, 229']
-          : ['125, 211, 252', '94, 234, 212', '165, 180, 252']
-
+        // Spiraling sound-and-light particles converging gently around the Cochlear Eye
+        const converge = easeOutQuart(clamp01(tSec / 2.2))
         for (const m of motes) {
-          const a = m.angle + tSec * m.speed
-          const r = Math.max(36, m.radius + Math.sin(tSec * 1.4 + m.angle) * 18) * dpr
+          const a = m.baseAngle + tSec * m.speed
+          const r = (m.startRadius + (m.endRadius - m.startRadius) * converge + Math.sin(tSec * 1.8 + m.baseAngle) * 10) * dpr
           const x = cx + Math.cos(a) * r
-          const y = cy + Math.sin(a) * r * 0.88
-          const pulse = 0.55 + 0.45 * Math.sin(tSec * 3.2 + m.angle * 2)
-          const alpha = m.alpha * pulse * clamp01(tSec / 0.4)
-          const rad = m.size * dpr * 2.8
+          const y = cy + Math.sin(a) * r * 0.92
+          const pulse = 0.6 + 0.4 * Math.sin(tSec * 3.0 + m.baseAngle * 2)
+          const alpha = m.alpha * pulse * clamp01(tSec / 0.35)
+          const rad = m.size * dpr * 2.6
+          const rgb = m.isTeal ? tealRGB : blueRGB
 
           const g = ctx.createRadialGradient(x, y, 0, x, y, rad)
-          g.addColorStop(0, isLight ? `rgba(255,255,255,${alpha})` : `rgba(255,255,255,${alpha})`)
-          g.addColorStop(0.35, `rgba(${moteColors[m.hue]},${alpha * 0.85})`)
-          g.addColorStop(1, `rgba(${moteColors[m.hue]},0)`)
+          g.addColorStop(0, `rgba(255, 255, 255, ${alpha})`)
+          g.addColorStop(0.4, `rgba(${rgb}, ${alpha * 0.88})`)
+          g.addColorStop(1, `rgba(${rgb}, 0)`)
           ctx.fillStyle = g
           ctx.beginPath()
           ctx.arc(x, y, rad, 0, Math.PI * 2)
@@ -224,6 +240,12 @@ export default function BrandIntro({ children }: { children: ReactNode }) {
     }
   }, [active, introTheme, runId, finish])
 
+  const isLight = introTheme === 'light'
+  const blueHex = isLight ? '#1D4ED8' : '#3B82F6'
+  const tealHex = isLight ? '#14B8A6' : '#2DD4BF'
+  const cardBg = isLight ? '#FFFFFF' : '#0E1A33'
+  const cardBorder = isLight ? 'rgba(29, 78, 216, 0.14)' : 'rgba(59, 130, 246, 0.28)'
+
   return (
     <>
       {children}
@@ -241,73 +263,69 @@ export default function BrandIntro({ children }: { children: ReactNode }) {
               <div className="brand-intro-halo" aria-hidden="true" />
               <svg viewBox="0 0 120 120" className="brand-intro-svg" fill="none" aria-hidden="true">
                 <defs>
-                  <linearGradient id={`${uid}-stroke`} x1="14" y1="98" x2="106" y2="18" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor={introTheme === 'light' ? '#1e3a8a' : '#60a5fa'} />
-                    <stop offset="50%" stopColor={introTheme === 'light' ? '#2563eb' : '#ffffff'} />
-                    <stop offset="100%" stopColor={introTheme === 'light' ? '#0d9488' : '#5eead4'} />
+                  <linearGradient id={`${uid}-spiral`} x1="34" y1="94" x2="88" y2="26" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor={blueHex} />
+                    <stop offset="100%" stopColor={tealHex} />
                   </linearGradient>
-                  <linearGradient id={`${uid}-fill`} x1="16" y1="20" x2="104" y2="100" gradientUnits="userSpaceOnUse">
-                    <stop
-                      offset="0%"
-                      stopColor={introTheme === 'light' ? '#2563eb' : '#7dd3fc'}
-                      stopOpacity={introTheme === 'light' ? '0.24' : '0.28'}
-                    />
-                    <stop
-                      offset="100%"
-                      stopColor={introTheme === 'light' ? '#0d9488' : '#38bdf8'}
-                      stopOpacity={introTheme === 'light' ? '0.14' : '0.16'}
-                    />
-                  </linearGradient>
-                  <linearGradient id={`${uid}-star`} x1="42" y1="30" x2="78" y2="70" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor={introTheme === 'light' ? '#1e3a8a' : '#ffffff'} />
-                    <stop offset="55%" stopColor={introTheme === 'light' ? '#2563eb' : '#7dd3fc'} />
-                    <stop offset="100%" stopColor={introTheme === 'light' ? '#0d9488' : '#5eead4'} />
+                  <linearGradient id={`${uid}-pupil`} x1="56" y1="72" x2="72" y2="56" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor={blueHex} />
+                    <stop offset="100%" stopColor={tealHex} />
                   </linearGradient>
                   <radialGradient id={`${uid}-spark`} cx="50%" cy="50%" r="50%">
                     <stop offset="0%" stopColor="#ffffff" />
-                    <stop offset="45%" stopColor={introTheme === 'light' ? '#3b82f6' : '#7dd3fc'} stopOpacity="0.9" />
-                    <stop offset="100%" stopColor={introTheme === 'light' ? '#2563eb' : '#38bdf8'} stopOpacity="0" />
+                    <stop offset="45%" stopColor={tealHex} stopOpacity="0.92" />
+                    <stop offset="100%" stopColor={blueHex} stopOpacity="0" />
                   </radialGradient>
                 </defs>
 
-                {/* Single-stroke Noah Ark + UN Paired Olive Wreath */}
+                {/* Squircle icon card matching Scheme A (light) / Scheme B (dark) */}
+                <rect width="120" height="120" rx="28" fill={cardBg} className="brand-intro-card" />
+                <rect x="1" y="1" width="118" height="118" rx="27" stroke={cardBorder} strokeWidth="2" className="brand-intro-card" />
+
+                {/* Outer single-stroke cochlear spiral ("外面一笔耳蜗代表「听」") */}
                 <path
-                  ref={wreathRef}
+                  ref={spiralRef}
                   pathLength={1}
-                  d={NOAH_ARK_OLIVE_WREATH_PATH}
-                  fill={`url(#${uid}-fill)`}
-                  stroke={`url(#${uid}-stroke)`}
-                  strokeWidth="3.1"
+                  d={COCHLEAR_SPIRAL_PATH}
+                  stroke={`url(#${uid}-spiral)`}
+                  strokeWidth={COCHLEAR_STROKE_WIDTH}
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   className="brand-intro-path"
                 />
 
-                {/* Single-stroke Fluid Ribbon 5-Pointed Star (1B-②) */}
-                <path
-                  ref={starRef}
-                  pathLength={1}
-                  d={FLUID_UNICURSAL_STAR_PATH}
-                  fill={`url(#${uid}-fill)`}
-                  stroke={`url(#${uid}-star)`}
-                  strokeWidth="3.3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="brand-intro-path"
+                {/* Expanding iris pulse ring when the pupil ignites */}
+                <circle
+                  ref={pupilHaloRef}
+                  cx={COCHLEAR_PUPIL.cx}
+                  cy={COCHLEAR_PUPIL.cy}
+                  r={COCHLEAR_PUPIL.r}
+                  stroke={tealHex}
+                  strokeWidth="2.4"
+                  style={{ opacity: 0 }}
                 />
 
-                {/* Live glowing comet sparks riding the tips of the single-stroke lines */}
-                <circle ref={wreathTipRef} r="5.5" fill={`url(#${uid}-spark)`} style={{ opacity: 0 }} />
-                <circle ref={starTipRef} r="6.2" fill={`url(#${uid}-spark)`} style={{ opacity: 0 }} />
+                {/* Center pupil focal dot ("中间一点瞳孔代表「看」") */}
+                <circle
+                  ref={pupilRef}
+                  cx={COCHLEAR_PUPIL.cx}
+                  cy={COCHLEAR_PUPIL.cy}
+                  r={0}
+                  fill={`url(#${uid}-pupil)`}
+                  style={{ opacity: 0 }}
+                />
+
+                {/* Live glowing comet spark riding the cochlear stroke tip */}
+                <circle ref={spiralTipRef} r="8.5" fill={`url(#${uid}-spark)`} style={{ opacity: 0 }} />
               </svg>
             </div>
 
             <div className="brand-intro-lockup">
-              <div className="brand-intro-title">NOAH VISION</div>
+              <div className="brand-intro-title">NoahVision</div>
               <div className="brand-intro-subtitle">
-                <span>SEE BEYOND</span>
+                <span>耳蜗之眼 · 听见万象</span>
                 <span className="brand-intro-dot" aria-hidden="true" />
-                <span>诺亚视界 · 智见无界</span>
+                <span>看见光芒</span>
               </div>
             </div>
           </div>

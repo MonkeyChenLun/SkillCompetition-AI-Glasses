@@ -55,10 +55,20 @@
 
 .brand-intro-totem {
   position: relative;
-  width: clamp(164px, 21vmin, 216px);
-  height: clamp(164px, 21vmin, 216px);
+  width: clamp(148px, 19vmin, 196px);
+  height: clamp(148px, 19vmin, 196px);
   display: grid;
   place-items: center;
+}
+
+.brand-intro-card {
+  opacity: 0;
+  animation: intro-card-in .7s cubic-bezier(.22, 1, .36, 1) .05s forwards;
+}
+
+@keyframes intro-card-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .brand-intro-halo {
@@ -104,11 +114,10 @@
 }
 
 .brand-intro-title {
-  font-size: clamp(26px, 3.4vmin, 36px);
-  font-weight: 700;
-  letter-spacing: .24em;
-  padding-inline-start: .24em;
-  background: linear-gradient(110deg, #ffffff 15%, #93c5fd 48%, #5eead4 72%, #ffffff 90%);
+  font-size: clamp(28px, 3.6vmin, 38px);
+  font-weight: 750;
+  letter-spacing: .04em;
+  background: linear-gradient(110deg, #ffffff 15%, #3b82f6 48%, #2dd4bf 75%, #ffffff 92%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
@@ -117,7 +126,7 @@
 }
 
 .brand-intro[data-intro-theme="light"] .brand-intro-title {
-  background: linear-gradient(110deg, #0f172a 15%, #1d4ed8 48%, #0d9488 72%, #0f172a 90%);
+  background: linear-gradient(110deg, #0f172a 12%, #1d4ed8 46%, #14b8a6 76%, #0f172a 92%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
